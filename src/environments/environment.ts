@@ -1,16 +1,14 @@
-// This file can be replaced during build by using the `fileReplacements` array.
-// `ng build` replaces `environment.ts` with `environment.prod.ts`.
-// The list of file replacements can be found in `angular.json`.
-
+// Configuración de entorno para desarrollo
 export const environment = {
   production: false,
-};
+  // =========================================================================
+  // PEGA AQUÍ TU URL DE MOCKAPI (recurso 'incidencias'):
+  // Ejemplo: 'https://67xxxxxxxxx.mockapi.io/api/v1/incidencias'
+  // Si está vacío (''), la app usará automáticamente los datos de prueba locales
+  // con paginación simulada para que puedas probar todo inmediatamente.
+  // =========================================================================
+  mockApiUrl: '',
 
-/*
- * For easier debugging in development mode, you can import the following file
- * to ignore zone related error stack frames such as `zone.run`, `zoneDelegate.invokeTask`.
- *
- * This import should be commented out in production mode because it will have a negative impact
- * on performance if an error is thrown.
- */
-// import 'zone.js/plugins/zone-error';  // Included with Angular CLI.
+  // API Meteorológica abierta y gratuita en tiempo real (Open-Meteo)
+  weatherApiUrl: 'https://api.open-meteo.com/v1/forecast'
+};

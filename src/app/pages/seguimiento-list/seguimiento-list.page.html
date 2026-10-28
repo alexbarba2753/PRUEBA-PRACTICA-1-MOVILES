@@ -1,0 +1,62 @@
+<ion-header [translucent]="true" class="ion-no-border">
+  <ion-toolbar color="warning">
+    <ion-title>Para Seguimiento</ion-title>
+    <ion-button slot="end" fill="clear" color="dark" (click)="loadSeguimiento()">
+      <ion-icon name="refresh-outline" slot="icon-only"></ion-icon>
+    </ion-button>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="seguimiento-content">
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content pullingText="Desliza para actualizar..." refreshingSpinner="circles">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <div class="header-note">
+    <ion-icon name="information-circle-outline"></ion-icon>
+    <span>Estas incidencias están guardadas únicamente en este dispositivo para tu control personal.</span>
+  </div>
+
+  @if (isLoading) {
+    <div class="state-container">
+      <ion-spinner name="crescent" color="warning"></ion-spinner>
+      <p>Cargando incidencias de seguimiento...</p>
+    </div>
+  }
+
+  @else if (incidencias.length === 0) {
+    <div class="state-container empty-state">
+      <ion-icon name="bookmark-outline" color="medium"></ion-icon>
+      <h3>Sin incidencias marcadas</h3>
+      <p>No tienes incidencias agregadas a seguimiento local. Puedes marcarlas desde el listado general con el ícono de marcador.</p>
+      <ion-button color="primary" routerLink="/incidencias">
+        <ion-icon name="list-outline" slot="start"></ion-icon>
+        Explorar Incidencias
+      </ion-button>
+    </div>
+  }
+
+  @else {
+    <div class="count-bar">
+      <span>Total en seguimiento: {{ incidencias.length }}</span>
+    </div>
+
+    <ion-list class="incidencias-container">
+      @for (incidencia of incidencias; track incidencia.id || incidencia.codigo) {
+        <app-incidencia-card
+          [incidencia]="incidencia"
+          [isMarked]="true"
+          (toggleSeguimiento)="onToggleSeguimiento($event)">
+        </app-incidencia-card>
+      }
+    </ion-list>
+  }
+
+  <ion-toast
+    [isOpen]="isToastOpen"
+    [message]="toastMessage"
+    [duration]="2000"
+    (didDismiss)="isToastOpen = false">
+  </ion-toast>
+</ion-content>

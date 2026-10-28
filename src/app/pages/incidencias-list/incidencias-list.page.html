@@ -1,0 +1,107 @@
+<ion-header [translucent]="true" class="ion-no-border">
+  <ion-toolbar color="primary">
+    <ion-title>Incidencias Urbanas</ion-title>
+    <ion-button slot="end" fill="clear" color="light" (click)="reloadList()">
+      <ion-icon name="refresh-outline" slot="icon-only"></ion-icon>
+    </ion-button>
+  </ion-toolbar>
+
+  <ion-toolbar color="primary" class="search-toolbar">
+    <ion-searchbar
+      placeholder="Buscar por tipo, sector, código..."
+      [debounce]="250"
+      (ionInput)="onSearchChange($event)"
+      color="light"
+      class="custom-search">
+    </ion-searchbar>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="list-content">
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content pullingText="Desliza para actualizar..." refreshingSpinner="circles">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <!-- Estado de carga inicial -->
+  @if (isLoading) {
+    <div class="state-container">
+      <ion-spinner name="crescent" color="primary"></ion-spinner>
+      <p>Consultando servicio de oficina...</p>
+    </div>
+  }
+
+  <!-- Estado de error (R2) -->
+  @else if (hasError) {
+    <div class="state-container error-state">
+      <ion-icon name="cloud-offline-outline" color="danger"></ion-icon>
+      <h3>Error de conexión</h3>
+      <p>{{ errorMessage }}</p>
+      <ion-button color="primary" fill="outline" (click)="reloadList()">
+        <ion-icon name="refresh-outline" slot="start"></ion-icon>
+        Reintentar
+      </ion-button>
+    </div>
+  }
+
+  <!-- Estado de lista vacía (R2) -->
+  @else if (filteredIncidencias.length === 0) {
+    <div class="state-container empty-state">
+      <ion-icon name="folder-open-outline" color="medium"></ion-icon>
+      <h3>No hay incidencias</h3>
+      <p>No se encontraron registros de incidencias urbanas que coincidan con la búsqueda.</p>
+      <ion-button color="primary" routerLink="/incidencias/nueva">
+        <ion-icon name="add-outline" slot="start"></ion-icon>
+        Registrar Nueva
+      </ion-button>
+    </div>
+  }
+
+  <!-- Listado de incidencias con 8 campos (R2) y carga progresiva (R3) -->
+  @else {
+    <div class="info-banner">
+      <span>Mostrando {{ filteredIncidencias.length }} incidencias &bull; Pág. {{ currentPage }}</span>
+      @if (!hasMore) {
+        <span class="end-tag">Todos los registros cargados</span>
+      }
+    </div>
+
+    <ion-list class="incidencias-container">
+      @for (incidencia of filteredIncidencias; track incidencia.id || incidencia.codigo) {
+        <app-incidencia-card
+          [incidencia]="incidencia"
+          [isMarked]="isIncidenciaMarked(incidencia)"
+          (toggleSeguimiento)="onToggleSeguimiento($event)">
+        </app-incidencia-card>
+      }
+    </ion-list>
+
+    <!-- Scroll infinito para carga progresiva (R3) -->
+    <ion-infinite-scroll [disabled]="!hasMore" (ionInfinite)="onIonInfinite($event)">
+      <ion-infinite-scroll-content
+        loadingSpinner="bubbles"
+        loadingText="Cargando más incidencias...">
+      </ion-infinite-scroll-content>
+    </ion-infinite-scroll>
+
+    @if (!hasMore) {
+      <div class="no-more-records">
+        <p>No hay más registros disponibles en el servicio.</p>
+      </div>
+    }
+  }
+
+  <!-- Botón flotante para nueva incidencia -->
+  <ion-fab slot="fixed" vertical="bottom" horizontal="end">
+    <ion-fab-button routerLink="/incidencias/nueva" color="secondary">
+      <ion-icon name="add-outline"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <ion-toast
+    [isOpen]="isToastOpen"
+    [message]="toastMessage"
+    [duration]="2000"
+    (didDismiss)="isToastOpen = false">
+  </ion-toast>
+</ion-content>

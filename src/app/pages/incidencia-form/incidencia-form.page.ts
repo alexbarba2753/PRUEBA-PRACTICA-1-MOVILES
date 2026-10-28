@@ -158,10 +158,7 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
     });
   }
 
-  // ==========================================
-  // R8: RECUPERACIÓN DE BORRADOR INCOMPLETO
-  // ==========================================
-
+  // R8: Recuperación de borrador incompleto
   private async checkSavedDraft(): Promise<void> {
     const draft = await this.storageService.getDraft<any>();
     if (!draft || (!draft.descripcion && !draft.direccion && !draft.sector && !draft.fotografia)) {
@@ -216,10 +213,7 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
     }
   }
 
-  // ==========================================
-  // R6: EVIDENCIA FOTOGRÁFICA
-  // ==========================================
-
+  // R6: Evidencia fotográfica
   async tomarFotografia(): Promise<void> {
     try {
       const photo = await this.cameraService.capturePhoto();
@@ -276,10 +270,7 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
     });
   }
 
-  // ==========================================
-  // R7: UBICACIÓN DE LA INCIDENCIA (GPS / MANUAL)
-  // ==========================================
-
+  // R7: Ubicación GPS / Manual
   async obtenerUbicacionGps(): Promise<void> {
     this.isCapturingGps.set(true);
     try {
@@ -334,10 +325,7 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
     this.consultarClima();
   }
 
-  // ==========================================
-  // R4: CONSULTA DE CONDICIONES METEOROLÓGICAS
-  // ==========================================
-
+  // R4: Condiciones meteorológicas
   consultarClima(): void {
     const lat = Number(this.incidenciaForm.get('latitud')?.value);
     const lng = Number(this.incidenciaForm.get('longitud')?.value);
@@ -367,10 +355,7 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
     });
   }
 
-  // ==========================================
-  // R5: GUARDAR INCIDENCIA CON VALIDACIONES
-  // ==========================================
-
+  // R5: Guardar con validaciones
   async onSubmit(): Promise<void> {
     if (this.incidenciaForm.invalid) {
       this.incidenciaForm.markAllAsTouched();

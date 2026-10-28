@@ -10,7 +10,6 @@ import { StorageService } from './storage.service';
   providedIn: 'root'
 })
 export class IncidenciasService {
-  // Notifica creaciones o actualizaciones para refrescar vistas reactivamente
   private updatesSubject = new Subject<void>();
   public updates$ = this.updatesSubject.asObservable();
 
@@ -23,10 +22,7 @@ export class IncidenciasService {
     return environment.mockApiUrl;
   }
 
-  // ==========================================
-  // R2 & R3: CONSULTA Y PAGINACIÓN REMOTA
-  // ==========================================
-
+  // R2 & R3: Consulta remota paginada
   getIncidencias(page: number = 1, limit: number = 5): Observable<IncidenciasPaginadasResponse> {
     const url = `${this.apiUrl}?page=${page}&limit=${limit}`;
 
@@ -40,7 +36,6 @@ export class IncidenciasService {
         };
       }),
       catchError((error: HttpErrorResponse) => {
-        // MockAPI retorna 404 al sobrepasar la última página disponible
         if (error.status === 404) {
           return of({ incidencias: [], hasMore: false, page });
         }
@@ -49,7 +44,6 @@ export class IncidenciasService {
     );
   }
 
-  // Consulta total para los indicadores del Dashboard (R10)
   getAllIncidencias(): Observable<Incidencia[]> {
     return this.http.get<Incidencia[]>(this.apiUrl).pipe(
       map(items => (Array.isArray(items) ? items : [])),
@@ -61,10 +55,7 @@ export class IncidenciasService {
     return this.http.get<Incidencia>(`${this.apiUrl}/${id}`);
   }
 
-  // ==========================================
-  // R5: REGISTRO DE INCIDENCIAS EN LA API
-  // ==========================================
-
+  // R5: Creación de incidencia en la API
   createIncidencia(incidencia: Incidencia): Observable<Incidencia> {
     if (!incidencia.codigo) {
       const suffix = Math.floor(100 + Math.random() * 900);
@@ -82,20 +73,14 @@ export class IncidenciasService {
     );
   }
 
-  // ==========================================
-  // R9: ACTUALIZACIÓN Y PERSISTENCIA REMOTA
-  // ==========================================
-
+  // R9: Actualización remota de estado
   updateIncidencia(id: string, partial: Partial<Incidencia>): Observable<Incidencia> {
     return this.http.put<Incidencia>(`${this.apiUrl}/${id}`, partial).pipe(
       tap(() => this.updatesSubject.next())
     );
   }
 
-  // ==========================================
-  // R1: CONSULTA DE SEGUIMIENTO LOCAL
-  // ==========================================
-
+  // R1: Consulta de incidencias en seguimiento local
   getSeguimientoIncidencias(): Observable<Incidencia[]> {
     const marked = this.storageService.markedCodes();
     if (!marked || marked.length === 0) {

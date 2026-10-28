@@ -164,11 +164,7 @@ export class IncidenciaDetailPage implements OnInit {
     await toast.present();
   }
 
-  // ==========================================
-  // R9: REGLAS DE TRANSICIÓN Y ACTUALIZACIÓN
-  // ==========================================
-
-  // Transición: pendiente -> en_proceso
+  // R9: Reglas de transición de estado
   async cambiarAEnProceso(): Promise<void> {
     const current = this.incidencia();
     if (!current) return;

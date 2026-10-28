@@ -8,14 +8,12 @@ const BORRADOR_KEY = 'urbaninspect_borrador';
   providedIn: 'root'
 })
 export class StorageService {
-  // Señal reactiva que contiene los códigos marcados para seguimiento (R1)
   readonly markedCodes = signal<string[]>([]);
 
   constructor() {
     this.loadMarkedCodes();
   }
 
-  // Carga los códigos almacenados localmente al iniciar el servicio
   async loadMarkedCodes(): Promise<string[]> {
     try {
       const { value } = await Preferences.get({ key: SEGUIMIENTO_KEY });
@@ -28,13 +26,12 @@ export class StorageService {
     }
   }
 
-  // Verifica de inmediato si una incidencia está marcada
   isMarked(codigo?: string, id?: string): boolean {
     const list = this.markedCodes();
     return (!!codigo && list.includes(codigo)) || (!!id && list.includes(id));
   }
 
-  // Marca o desmarca una incidencia en almacenamiento local (R1)
+  // R1: Guarda o retira el código en almacenamiento local
   async toggleMark(code: string): Promise<boolean> {
     if (!code) return false;
     const current = [...this.markedCodes()];
@@ -56,10 +53,7 @@ export class StorageService {
     return isMarked;
   }
 
-  // ==========================================
-  // R8: RECUPERACIÓN DE REGISTRO INCOMPLETO
-  // ==========================================
-
+  // R8: Gestión de borrador de incidencia incompleta
   async saveDraft(data: unknown): Promise<void> {
     if (!data) {
       await this.clearDraft();

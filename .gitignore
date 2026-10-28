@@ -78,3 +78,13 @@ Thumbs.db
 
 # Guía de estudio privada para defensa oral
 RESUMEN_DEFENSA.md
+
+# Testing / Playwright / E2E
+/e2e/
+playwright.config.ts
+tsconfig.e2e.json
+vitest.config.mts
+tsconfig.spec.json
+src/test-setup.ts
+src/**/*.spec.ts
+*.apk

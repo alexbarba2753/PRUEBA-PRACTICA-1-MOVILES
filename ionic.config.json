@@ -1,0 +1,7 @@
+{
+  "name": "PRUEBA-PRACTICA-1",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}

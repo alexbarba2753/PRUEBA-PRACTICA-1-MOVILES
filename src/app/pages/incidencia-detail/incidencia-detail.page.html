@@ -5,9 +5,9 @@
     </ion-buttons>
     <ion-title>Detalle de Incidencia</ion-title>
     <ion-buttons slot="end">
-      @if (incidencia) {
+      @if (incidencia(); as inc) {
         <ion-button (click)="toggleSeguimiento()">
-          <ion-icon [name]="isMarked ? 'bookmark' : 'bookmark-outline'" slot="icon-only" [color]="isMarked ? 'warning' : 'light'"></ion-icon>
+          <ion-icon [name]="isMarked() ? 'bookmark' : 'bookmark-outline'" slot="icon-only" [color]="isMarked() ? 'warning' : 'light'"></ion-icon>
         </ion-button>
       }
     </ion-buttons>
@@ -20,14 +20,14 @@
     </ion-refresher-content>
   </ion-refresher>
 
-  @if (isLoading) {
+  @if (isLoading()) {
     <div class="state-container">
       <ion-spinner name="crescent" color="primary"></ion-spinner>
       <p>Consultando detalle de la incidencia...</p>
     </div>
   }
 
-  @else if (hasError || !incidencia) {
+  @else if (hasError() || !incidencia()) {
     <div class="state-container error-state">
       <ion-icon name="alert-circle-outline" color="danger"></ion-icon>
       <h3>Incidencia no encontrada</h3>
@@ -38,56 +38,56 @@
     </div>
   }
 
-  @else {
+  @else if (incidencia(); as inc) {
     <!-- Fotografía de evidencia accesible (R2, R6) -->
-    @if (incidencia.fotografia) {
+    @if (inc.fotografia) {
       <div class="evidence-hero">
-        <img [src]="incidencia.fotografia" [alt]="incidencia.tipo" class="hero-image" />
+        <img [src]="inc.fotografia" [alt]="inc.tipo" class="hero-image" />
         <div class="photo-badge">Evidencia Fotográfica</div>
       </div>
     } @else {
       <div class="no-photo-hero">
-        <ion-icon name="image-outline"></ion-icon>
+        <ion-icon name="alert-circle-outline"></ion-icon>
         <span>Sin fotografía adjunta</span>
       </div>
     }
 
-    <!-- Cabecera de la incidencia -->
+    <!-- Cabecera de la incidencia con los 8 campos (R2) -->
     <div class="detail-header-card">
       <div class="tags-row">
-        <span class="codigo-chip">{{ incidencia.codigo }}</span>
-        <ion-badge [color]="getEstadoColor(incidencia.estado)" class="status-badge">
-          {{ formatEstado(incidencia.estado) }}
+        <span class="codigo-chip">{{ inc.codigo }}</span>
+        <ion-badge [color]="getEstadoColor(inc.estado)" class="status-badge">
+          {{ formatEstado(inc.estado) }}
         </ion-badge>
-        <span class="priority-chip" [class]="'priority-' + (incidencia.prioridad || 'media')">
-          Prioridad {{ incidencia.prioridad | uppercase }}
+        <span class="priority-chip" [class]="'priority-' + (inc.prioridad || 'media')">
+          Prioridad {{ inc.prioridad | uppercase }}
         </span>
       </div>
 
-      <h1 class="incident-title">{{ incidencia.tipo }}</h1>
+      <h1 class="incident-title">{{ inc.tipo }}</h1>
 
       <div class="location-banner">
         <ion-icon name="location-outline"></ion-icon>
-        <span><strong>{{ incidencia.sector }}</strong> &bull; {{ incidencia.direccion }}</span>
+        <span><strong>{{ inc.sector }}</strong> &bull; {{ inc.direccion }}</span>
       </div>
     </div>
 
-    <!-- Descripción del problema -->
+    <!-- Descripción del problema (R2) -->
     <ion-card class="info-card">
       <ion-card-header>
         <ion-card-title>Descripción del Hecho</ion-card-title>
       </ion-card-header>
       <ion-card-content>
-        <p class="description-text">{{ incidencia.descripcion }}</p>
+        <p class="description-text">{{ inc.descripcion }}</p>
         <div class="meta-row">
           <ion-icon name="calendar-outline"></ion-icon>
-          <span>Registrado: {{ incidencia.fecha }}</span>
+          <span>Registrado: {{ inc.fecha }}</span>
         </div>
       </ion-card-content>
     </ion-card>
 
     <!-- Coordenadas Geográficas (R7) -->
-    @if (incidencia.coordenadas) {
+    @if (inc.coordenadas) {
       <ion-card class="info-card">
         <ion-card-header>
           <ion-card-title>Ubicación Georreferenciada</ion-card-title>
@@ -96,11 +96,11 @@
           <div class="coords-display">
             <div class="coord-item">
               <span class="coord-label">Latitud:</span>
-              <span class="coord-val">{{ incidencia.coordenadas.lat }}</span>
+              <span class="coord-val">{{ inc.coordenadas.lat }}</span>
             </div>
             <div class="coord-item">
               <span class="coord-label">Longitud:</span>
-              <span class="coord-val">{{ incidencia.coordenadas.lng }}</span>
+              <span class="coord-val">{{ inc.coordenadas.lng }}</span>
             </div>
           </div>
         </ion-card-content>
@@ -108,7 +108,7 @@
     }
 
     <!-- Condiciones Meteorológicas registradas (R4) -->
-    @if (incidencia.clima) {
+    @if (inc.clima) {
       <ion-card class="info-card">
         <ion-card-header>
           <ion-card-title>Condiciones Meteorológicas al Registro</ion-card-title>
@@ -116,20 +116,20 @@
         <ion-card-content>
           <div class="clima-grid">
             <div class="clima-col">
-              <span class="val">{{ incidencia.clima.temperatura }} °C</span>
+              <span class="val">{{ inc.clima.temperatura }} °C</span>
               <span class="lbl">Temperatura</span>
             </div>
             <div class="clima-col">
-              <span class="val">{{ incidencia.clima.precipitacion }} mm</span>
+              <span class="val">{{ inc.clima.precipitacion }} mm</span>
               <span class="lbl">Lluvia última hora</span>
             </div>
             <div class="clima-col">
-              <span class="val text-condicion">{{ incidencia.clima.condicion }}</span>
+              <span class="val text-condicion">{{ inc.clima.condicion }}</span>
               <span class="lbl">Estado del tiempo</span>
             </div>
           </div>
 
-          @if (incidencia.clima.advertenciaLluvia) {
+          @if (inc.clima.advertenciaLluvia) {
             <div class="clima-warning">
               <ion-icon name="warning-outline"></ion-icon>
               <span>Advertencia: Precipitación mayor a 5 mm. Puede comprometer las obras de reparación.</span>
@@ -140,7 +140,7 @@
     }
 
     <!-- Observación de Cierre (R9) -->
-    @if (incidencia.estado === 'resuelta' && incidencia.observacion) {
+    @if (inc.estado === 'resuelta' && inc.observacion) {
       <ion-card class="info-card card-observacion">
         <ion-card-header>
           <div class="resuelto-header">
@@ -149,7 +149,7 @@
           </div>
         </ion-card-header>
         <ion-card-content>
-          <p class="observacion-text">{{ incidencia.observacion }}</p>
+          <p class="observacion-text">{{ inc.observacion }}</p>
         </ion-card-content>
       </ion-card>
     }
@@ -159,13 +159,13 @@
       <ion-card-header>
         <ion-card-title>Gestión y Actualización de Estado (R9)</ion-card-title>
         <ion-card-subtitle>
-          Estado actual: <strong>{{ formatEstado(incidencia.estado) }}</strong>
+          Estado actual: <strong>{{ formatEstado(inc.estado) }}</strong>
         </ion-card-subtitle>
       </ion-card-header>
 
       <ion-card-content>
         <!-- Si está Pendiente -->
-        @if (incidencia.estado === 'pendiente') {
+        @if (inc.estado === 'pendiente') {
           <div class="workflow-actions">
             <ion-button expand="block" color="primary" (click)="cambiarAEnProceso()">
               <ion-icon name="construct-outline" slot="start"></ion-icon>
@@ -179,7 +179,7 @@
         }
 
         <!-- Si está En Proceso -->
-        @else if (incidencia.estado === 'en_proceso') {
+        @else if (inc.estado === 'en_proceso') {
           <div class="workflow-actions">
             <ion-button expand="block" color="success" (click)="solicitarResolucion()">
               <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
@@ -193,7 +193,7 @@
         }
 
         <!-- Si está Resuelta -->
-        @else if (incidencia.estado === 'resuelta') {
+        @else if (inc.estado === 'resuelta') {
           <div class="resuelto-badge-box">
             <ion-icon name="checkmark-circle-outline" color="success"></ion-icon>
             <p><strong>Incidencia finalizada y cerrada.</strong></p>

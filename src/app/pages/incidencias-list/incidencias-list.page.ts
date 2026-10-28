@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -27,13 +27,9 @@ import {
   addOutline,
   refreshOutline,
   alertCircleOutline,
-  searchOutline,
   folderOpenOutline,
-  bookmark,
-  bookmarkOutline,
   cloudOfflineOutline
 } from 'ionicons/icons';
-import { Subscription } from 'rxjs';
 import { IncidenciasService } from '../../core/services/incidencias.service';
 import { StorageService } from '../../core/services/storage.service';
 import { Incidencia } from '../../core/models/incidencia.model';
@@ -67,145 +63,120 @@ import { IncidenciaCardComponent } from '../../shared/components/incidencia-card
   templateUrl: './incidencias-list.page.html',
   styleUrls: ['./incidencias-list.page.scss']
 })
-export class IncidenciasListPage implements OnInit, OnDestroy {
-  incidencias: Incidencia[] = [];
-  filteredIncidencias: Incidencia[] = [];
-  markedCodes: string[] = [];
-
-  currentPage = 1;
+export class IncidenciasListPage implements OnInit {
+  incidencias = signal<Incidencia[]>([]);
+  currentPage = signal(1);
   pageSize = 5;
-  hasMore = true;
-  isLoading = false;
-  hasError = false;
-  errorMessage = '';
-  searchTerm = '';
+  hasMore = signal(true);
+  isLoading = signal(false);
+  hasError = signal(false);
+  errorMessage = signal('');
+  searchTerm = signal('');
 
-  toastMessage = '';
-  isToastOpen = false;
+  toastMessage = signal('');
+  isToastOpen = signal(false);
 
-  private subs = new Subscription();
+  // Filtro reactivo en memoria (R2)
+  filteredIncidencias = computed(() => {
+    const term = this.searchTerm().trim().toLowerCase();
+    const list = this.incidencias();
+    if (!term) return list;
+    return list.filter(i =>
+      i.tipo.toLowerCase().includes(term) ||
+      i.sector.toLowerCase().includes(term) ||
+      i.direccion.toLowerCase().includes(term) ||
+      i.codigo.toLowerCase().includes(term) ||
+      i.descripcion.toLowerCase().includes(term)
+    );
+  });
 
   constructor(
     private incidenciasService: IncidenciasService,
-    private storageService: StorageService,
-    private cdr: ChangeDetectorRef
+    private storageService: StorageService
   ) {
     addIcons({
       addOutline,
       refreshOutline,
       alertCircleOutline,
-      searchOutline,
       folderOpenOutline,
-      bookmark,
-      bookmarkOutline,
       cloudOfflineOutline
     });
   }
 
   ngOnInit(): void {
-    this.subs.add(
-      this.storageService.markedCodes$.subscribe(codes => {
-        this.markedCodes = codes;
-        this.cdr.markForCheck();
-      })
-    );
-
-    // Escuchar actualizaciones globales para refrescar la lista si se crea o edita una incidencia
-    this.subs.add(
-      this.incidenciasService.updates$.subscribe(() => {
-        this.reloadList();
-      })
-    );
-
+    this.incidenciasService.updates$.subscribe(() => this.reloadList());
     this.loadIncidencias(1, true);
   }
 
   ionViewWillEnter(): void {
-    if (this.incidencias.length === 0 && !this.isLoading) {
+    if (this.incidencias().length === 0 && !this.isLoading()) {
       this.loadIncidencias(1, true);
-    } else {
-      this.cdr.markForCheck();
     }
   }
 
-  ngOnDestroy(): void {
-    this.subs.unsubscribe();
-  }
-
+  // R2 & R3: Carga remota paginada por lotes (page & limit)
   loadIncidencias(page: number, reset: boolean = false, event?: InfiniteScrollCustomEvent): void {
     if (reset) {
-      this.isLoading = true;
-      this.hasError = false;
-      this.currentPage = 1;
-      this.cdr.markForCheck();
+      this.isLoading.set(true);
+      this.hasError.set(false);
+      this.currentPage.set(1);
     }
 
     this.incidenciasService.getIncidencias(page, this.pageSize).subscribe({
       next: response => {
-        this.isLoading = false;
-        this.hasError = false;
+        this.isLoading.set(false);
+        this.hasError.set(false);
 
         if (reset) {
-          this.incidencias = response.incidencias;
+          this.incidencias.set(response.incidencias);
         } else {
-          // Evitar duplicados por id o código
-          const existingIds = new Set(this.incidencias.map(i => i.id || i.codigo));
+          // Evitar elementos duplicados por id o código
+          const existingIds = new Set(this.incidencias().map(i => i.id || i.codigo));
           const nuevos = response.incidencias.filter(i => !existingIds.has(i.id || i.codigo));
-          this.incidencias = [...this.incidencias, ...nuevos];
+          this.incidencias.update(current => [...current, ...nuevos]);
         }
 
-        this.hasMore = response.hasMore;
-        this.currentPage = page;
-        this.applyFilter();
+        this.hasMore.set(response.hasMore);
+        this.currentPage.set(page);
 
         if (event) {
           event.target.complete();
         }
-
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
       },
-      error: err => {
-        this.isLoading = false;
-        this.hasError = true;
-        this.errorMessage = 'No se pudo conectar con el servicio de incidencias. Verifica la conexión o la URL.';
+      error: () => {
+        this.isLoading.set(false);
+        this.hasError.set(true);
+        this.errorMessage.set('No se pudo conectar con el servicio de incidencias. Verifica la conexión.');
         if (event) {
           event.target.complete();
         }
-
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
       }
     });
   }
 
+  // R3: Scroll infinito
   onIonInfinite(event: Event): void {
     const customEvent = event as InfiniteScrollCustomEvent;
-    if (!this.hasMore || this.isLoading) {
+    if (!this.hasMore() || this.isLoading()) {
       customEvent.target.complete();
       return;
     }
-    this.loadIncidencias(this.currentPage + 1, false, customEvent);
+    this.loadIncidencias(this.currentPage() + 1, false, customEvent);
   }
 
   onRefresh(event: Event): void {
     const customEvent = event as RefresherCustomEvent;
     this.incidenciasService.getIncidencias(1, this.pageSize).subscribe({
       next: response => {
-        this.incidencias = response.incidencias;
-        this.hasMore = response.hasMore;
-        this.currentPage = 1;
-        this.hasError = false;
-        this.applyFilter();
+        this.incidencias.set(response.incidencias);
+        this.hasMore.set(response.hasMore);
+        this.currentPage.set(1);
+        this.hasError.set(false);
         customEvent.target.complete();
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
       },
       error: () => {
-        this.hasError = true;
+        this.hasError.set(true);
         customEvent.target.complete();
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
       }
     });
   }
@@ -214,40 +185,23 @@ export class IncidenciasListPage implements OnInit, OnDestroy {
     this.loadIncidencias(1, true);
   }
 
+  // R1: Marcar / Desmarcar para seguimiento local
   async onToggleSeguimiento(incidencia: Incidencia): Promise<void> {
     const code = incidencia.codigo || incidencia.id || '';
     const wasMarked = await this.storageService.toggleMark(code);
-    this.toastMessage = wasMarked
-      ? `Incidencia ${code} agregada a seguimiento local.`
-      : `Incidencia ${code} removida de seguimiento.`;
-    this.isToastOpen = true;
+    this.toastMessage.set(
+      wasMarked
+        ? `Incidencia ${code} agregada a seguimiento local.`
+        : `Incidencia ${code} removida de seguimiento.`
+    );
+    this.isToastOpen.set(true);
   }
 
   isIncidenciaMarked(incidencia: Incidencia): boolean {
-    const code = incidencia.codigo || '';
-    const id = incidencia.id || '';
-    return (code !== '' && this.markedCodes.includes(code)) || (id !== '' && this.markedCodes.includes(id));
-  }
-
-  applyFilter(): void {
-    if (!this.searchTerm.trim()) {
-      this.filteredIncidencias = [...this.incidencias];
-      this.cdr.markForCheck();
-      return;
-    }
-    const term = this.searchTerm.toLowerCase();
-    this.filteredIncidencias = this.incidencias.filter(i =>
-      i.tipo.toLowerCase().includes(term) ||
-      i.sector.toLowerCase().includes(term) ||
-      i.direccion.toLowerCase().includes(term) ||
-      i.codigo.toLowerCase().includes(term) ||
-      i.descripcion.toLowerCase().includes(term)
-    );
-    this.cdr.markForCheck();
+    return this.storageService.isMarked(incidencia.codigo, incidencia.id);
   }
 
   onSearchChange(event: CustomEvent): void {
-    this.searchTerm = event.detail.value || '';
-    this.applyFilter();
+    this.searchTerm.set(event.detail.value || '');
   }
 }

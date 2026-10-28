@@ -15,17 +15,17 @@
 
   <div class="header-note">
     <ion-icon name="information-circle-outline"></ion-icon>
-    <span>Estas incidencias están guardadas únicamente en este dispositivo para tu control personal.</span>
+    <span>Estas incidencias están guardadas únicamente en este dispositivo para tu control personal (R1).</span>
   </div>
 
-  @if (isLoading) {
+  @if (isLoading()) {
     <div class="state-container">
       <ion-spinner name="crescent" color="warning"></ion-spinner>
       <p>Cargando incidencias de seguimiento...</p>
     </div>
   }
 
-  @else if (incidencias.length === 0) {
+  @else if (incidencias().length === 0) {
     <div class="state-container empty-state">
       <ion-icon name="bookmark-outline" color="medium"></ion-icon>
       <h3>Sin incidencias marcadas</h3>
@@ -39,11 +39,11 @@
 
   @else {
     <div class="count-bar">
-      <span>Total en seguimiento: {{ incidencias.length }}</span>
+      <span>Total en seguimiento: {{ incidencias().length }}</span>
     </div>
 
     <ion-list class="incidencias-container">
-      @for (incidencia of incidencias; track incidencia.id || incidencia.codigo) {
+      @for (incidencia of incidencias(); track incidencia.id || incidencia.codigo) {
         <app-incidencia-card
           [incidencia]="incidencia"
           [isMarked]="true"
@@ -54,9 +54,9 @@
   }
 
   <ion-toast
-    [isOpen]="isToastOpen"
-    [message]="toastMessage"
+    [isOpen]="isToastOpen()"
+    [message]="toastMessage()"
     [duration]="2000"
-    (didDismiss)="isToastOpen = false">
+    (didDismiss)="isToastOpen.set(false)">
   </ion-toast>
 </ion-content>

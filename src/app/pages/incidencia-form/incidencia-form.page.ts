@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -81,13 +81,12 @@ import { Incidencia, ClimaInfo, TipoIncidencia, PrioridadIncidencia } from '../.
 export class IncidenciaFormPage implements OnInit, OnDestroy {
   incidenciaForm!: FormGroup;
 
-  fotografiaPreview: string | null = null;
-  climaInfo: ClimaInfo | null = null;
-  isLoadingClima = false;
-  climaError: string | null = null;
-  isCapturingGps = false;
-
-  isSubmitting = false;
+  fotografiaPreview = signal<string | null>(null);
+  climaInfo = signal<ClimaInfo | null>(null);
+  isLoadingClima = signal(false);
+  climaError = signal<string | null>(null);
+  isCapturingGps = signal(false);
+  isSubmitting = signal(false);
 
   tiposDisponibles: TipoIncidencia[] = [
     'Bache',
@@ -111,8 +110,7 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
     private router: Router,
     private alertCtrl: AlertController,
     private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController,
-    private cdr: ChangeDetectorRef
+    private toastCtrl: ToastController
   ) {
     addIcons({
       cameraOutline,
@@ -144,17 +142,17 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
       descripcion: ['', [Validators.required, Validators.minLength(8)]],
       direccion: ['', Validators.required],
       sector: ['', Validators.required],
-      latitud: [-0.1807], // Coordenadas predeterminadas de Quito
+      latitud: [-0.1807],
       longitud: [-78.4678]
     });
 
-    // Auto-guardar borrador al modificar campos (R8)
+    // R8: Auto-guardar borrador al modificar cualquier campo
     this.formSub = this.incidenciaForm.valueChanges.subscribe(val => {
       if (this.incidenciaForm.dirty) {
         this.storageService.saveDraft({
           ...val,
-          fotografia: this.fotografiaPreview,
-          clima: this.climaInfo
+          fotografia: this.fotografiaPreview(),
+          clima: this.climaInfo()
         });
       }
     });
@@ -163,77 +161,88 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
   // ==========================================
   // R8: RECUPERACIÓN DE BORRADOR INCOMPLETO
   // ==========================================
+
   private async checkSavedDraft(): Promise<void> {
     const draft = await this.storageService.getDraft<any>();
-    if (draft && (draft.descripcion || draft.direccion || draft.sector || draft.fotografia)) {
-      const alert = await this.alertCtrl.create({
-        header: 'Registro Incompleto',
-        message: 'Se encontró un borrador sin guardar de una incidencia anterior. ¿Deseas continuar capturándolo o descartarlo?',
-        backdropDismiss: false,
-        buttons: [
-          {
-            text: 'Descartar',
-            role: 'destructive',
-            handler: () => {
-              this.storageService.clearDraft();
-            }
-          },
-          {
-            text: 'Continuar',
-            handler: () => {
-              this.incidenciaForm.patchValue({
-                tipo: draft.tipo || 'Bache',
-                prioridad: draft.prioridad || 'media',
-                descripcion: draft.descripcion || '',
-                direccion: draft.direccion || '',
-                sector: draft.sector || '',
-                latitud: draft.latitud ?? -0.1807,
-                longitud: draft.longitud ?? -78.4678
-              });
-              if (draft.fotografia) {
-                this.fotografiaPreview = draft.fotografia;
-              }
-              if (draft.clima) {
-                this.climaInfo = draft.clima;
-              }
-            }
+    if (!draft || (!draft.descripcion && !draft.direccion && !draft.sector && !draft.fotografia)) {
+      return;
+    }
+
+    // Si ya fue confirmado desde el inicio de la app, poblar directamente sin repetir alerta
+    const state = history.state;
+    if (state?.draftConfirmed) {
+      this.populateDraft(draft);
+      return;
+    }
+
+    const alert = await this.alertCtrl.create({
+      header: 'Registro Incompleto',
+      message: 'Existe un borrador sin guardar de una incidencia anterior. ¿Deseas continuar capturándolo o descartarlo?',
+      backdropDismiss: false,
+      buttons: [
+        {
+          text: 'Descartar',
+          role: 'destructive',
+          handler: () => {
+            this.storageService.clearDraft();
           }
-        ]
-      });
-      await alert.present();
+        },
+        {
+          text: 'Continuar',
+          handler: () => {
+            this.populateDraft(draft);
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  private populateDraft(draft: any): void {
+    this.incidenciaForm.patchValue({
+      tipo: draft.tipo || 'Bache',
+      prioridad: draft.prioridad || 'media',
+      descripcion: draft.descripcion || '',
+      direccion: draft.direccion || '',
+      sector: draft.sector || '',
+      latitud: draft.latitud ?? -0.1807,
+      longitud: draft.longitud ?? -78.4678
+    });
+    if (draft.fotografia) {
+      this.fotografiaPreview.set(draft.fotografia);
+    }
+    if (draft.clima) {
+      this.climaInfo.set(draft.clima);
     }
   }
 
   // ==========================================
   // R6: EVIDENCIA FOTOGRÁFICA
   // ==========================================
+
   async tomarFotografia(): Promise<void> {
     try {
-      const photoDataUrl = await this.cameraService.capturePhoto();
-      if (photoDataUrl) {
-        this.fotografiaPreview = photoDataUrl;
-        // Guardar borrador actualizado
+      const photo = await this.cameraService.capturePhoto();
+      if (photo) {
+        this.fotografiaPreview.set(photo);
         this.storageService.saveDraft({
           ...this.incidenciaForm.value,
-          fotografia: this.fotografiaPreview,
-          clima: this.climaInfo
+          fotografia: photo,
+          clima: this.climaInfo()
         });
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
       }
-      // Si el usuario canceló, photoDataUrl es null y los demás campos quedan intactos
     } catch (err: any) {
       if (err.message === 'PERMISO_DENEGADO') {
         const alert = await this.alertCtrl.create({
-          header: 'Permiso de Cámara Denegado',
-          message: 'Se denegó el acceso a la cámara o galería. Si la incidencia es de prioridad alta, la fotografía es estrictamente obligatoria para registrarla.',
+          header: 'Permiso Denegado',
+          message: 'Se denegó el acceso a la cámara. Si la prioridad es Alta, la foto es obligatoria para registrar la incidencia.',
           buttons: ['Entendido']
         });
         await alert.present();
       } else {
         const toast = await this.toastCtrl.create({
           message: 'No se pudo capturar la imagen. Inténtelo de nuevo.',
-          duration: 3000,
+          duration: 2500,
           color: 'danger'
         });
         await toast.present();
@@ -242,19 +251,37 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
   }
 
   eliminarFotografia(): void {
-    this.fotografiaPreview = null;
+    this.fotografiaPreview.set(null);
     this.storageService.saveDraft({
       ...this.incidenciaForm.value,
       fotografia: null,
-      clima: this.climaInfo
+      clima: this.climaInfo()
+    });
+  }
+
+  usarFotoMuestra(): void {
+    const tipo = this.incidenciaForm.get('tipo')?.value || 'Bache';
+    let path = 'assets/incidencias/bache.jpg';
+
+    if (tipo.includes('Luminaria')) path = 'assets/incidencias/luminaria.jpg';
+    else if (tipo.includes('Alcantarilla')) path = 'assets/incidencias/alcantarilla.jpg';
+    else if (tipo.includes('Señalización')) path = 'assets/incidencias/senal.jpg';
+    else if (tipo.includes('parque')) path = 'assets/incidencias/parque.jpg';
+
+    this.fotografiaPreview.set(path);
+    this.storageService.saveDraft({
+      ...this.incidenciaForm.value,
+      fotografia: path,
+      clima: this.climaInfo()
     });
   }
 
   // ==========================================
   // R7: UBICACIÓN DE LA INCIDENCIA (GPS / MANUAL)
   // ==========================================
+
   async obtenerUbicacionGps(): Promise<void> {
-    this.isCapturingGps = true;
+    this.isCapturingGps.set(true);
     try {
       const coords = await this.locationService.getCurrentPosition();
       this.incidenciaForm.patchValue({
@@ -264,107 +291,68 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
 
       const toast = await this.toastCtrl.create({
         message: `Coordenadas capturadas: ${coords.lat}, ${coords.lng}`,
-        duration: 2500,
+        duration: 2000,
         color: 'success'
       });
       await toast.present();
 
-      // Consultar clima automáticamente con las coordenadas recién obtenidas (R7 -> R4)
+      // Consultar clima automáticamente con las coordenadas obtenidas (R7 -> R4)
       this.consultarClima();
-    } catch (error: any) {
+    } catch {
       const alert = await this.alertCtrl.create({
-        header: 'Acceso GPS No Disponible',
-        subHeader: 'Ubicación física no detectada',
-        message: 'No se obtuvo señal GPS directa (habitual en navegadores o emuladores en PC). Conforme al requisito R7, puedes usar las coordenadas de Quito o ingresarlas manualmente.',
+        header: 'GPS No Disponible',
+        message: 'No se obtuvo señal GPS directa. Conforme al requisito R7, puedes usar coordenadas manuales o las coordenadas de Quito.',
         buttons: [
+          { text: 'Ingresar Manualmente', role: 'cancel' },
           {
-            text: 'Ingresar Manualmente',
-            role: 'cancel'
-          },
-          {
-            text: 'Usar Coordenadas de Quito',
-            handler: () => {
-              this.usarCoordenadasQuito();
-            }
+            text: 'Cargar Coordenadas de Quito',
+            handler: () => this.usarCoordenadasQuito()
           }
         ]
       });
       await alert.present();
     } finally {
-      this.isCapturingGps = false;
-      this.cdr.markForCheck();
-      this.cdr.detectChanges();
+      this.isCapturingGps.set(false);
     }
   }
 
   usarCoordenadasQuito(): void {
-    // Coordenadas céntricas del Distrito Metropolitano de Quito (La Carolina / Iñaquito)
     this.incidenciaForm.patchValue({
       latitud: -0.1807,
       longitud: -78.4678
     });
     this.consultarClima();
-    this.cdr.markForCheck();
-    this.cdr.detectChanges();
-  }
-
-  usarFotoMuestra(): void {
-    const tipo = this.incidenciaForm.get('tipo')?.value || 'Bache';
-    let path = 'assets/incidencias/bache.jpg';
-
-    if (tipo.includes('Luminaria')) {
-      path = 'assets/incidencias/luminaria.jpg';
-    } else if (tipo.includes('Alcantarilla')) {
-      path = 'assets/incidencias/alcantarilla.jpg';
-    } else if (tipo.includes('Señalización')) {
-      path = 'assets/incidencias/senal.jpg';
-    } else if (tipo.includes('parque')) {
-      path = 'assets/incidencias/parque.jpg';
-    }
-
-    this.fotografiaPreview = path;
-    this.storageService.saveDraft({
-      ...this.incidenciaForm.value,
-      fotografia: this.fotografiaPreview,
-      clima: this.climaInfo
-    });
-    this.cdr.markForCheck();
-    this.cdr.detectChanges();
   }
 
   // ==========================================
   // R4: CONSULTA DE CONDICIONES METEOROLÓGICAS
   // ==========================================
+
   consultarClima(): void {
     const lat = Number(this.incidenciaForm.get('latitud')?.value);
     const lng = Number(this.incidenciaForm.get('longitud')?.value);
 
     if (isNaN(lat) || isNaN(lng)) {
-      this.climaError = 'Ingrese coordenadas numéricas válidas para consultar el clima.';
+      this.climaError.set('Ingrese coordenadas válidas para consultar el clima.');
       return;
     }
 
-    this.isLoadingClima = true;
-    this.climaError = null;
+    this.isLoadingClima.set(true);
+    this.climaError.set(null);
 
     this.weatherService.getClima(lat, lng).subscribe({
       next: info => {
-        this.climaInfo = info;
-        this.isLoadingClima = false;
-        // Guardar en borrador
+        this.climaInfo.set(info);
+        this.isLoadingClima.set(false);
         this.storageService.saveDraft({
           ...this.incidenciaForm.value,
-          fotografia: this.fotografiaPreview,
-          clima: this.climaInfo
+          fotografia: this.fotografiaPreview(),
+          clima: info
         });
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
       },
       error: err => {
-        this.isLoadingClima = false;
-        this.climaError = err.message || 'El servicio meteorológico no respondió. Puede continuar con el registro.';
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
+        this.isLoadingClima.set(false);
+        this.climaError.set(err.message || 'El servicio meteorológico no respondió. Puede continuar.');
       }
     });
   }
@@ -372,6 +360,7 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
   // ==========================================
   // R5: GUARDAR INCIDENCIA CON VALIDACIONES
   // ==========================================
+
   async onSubmit(): Promise<void> {
     if (this.incidenciaForm.invalid) {
       this.incidenciaForm.markAllAsTouched();
@@ -387,10 +376,10 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
     const { tipo, prioridad, descripcion, direccion, sector, latitud, longitud } = this.incidenciaForm.value;
 
     // Regla R5 / R6: Si prioridad es ALTA, la fotografía es OBLIGATORIA
-    if (prioridad === 'alta' && !this.fotografiaPreview) {
+    if (prioridad === 'alta' && !this.fotografiaPreview()) {
       const alert = await this.alertCtrl.create({
         header: 'Fotografía Obligatoria',
-        message: 'Las incidencias con prioridad ALTA requieren obligatoriamente una fotografía de evidencia para proceder.',
+        message: 'Las incidencias con prioridad ALTA exigen obligatoriamente una fotografía de evidencia.',
         buttons: ['Entendido']
       });
       await alert.present();
@@ -404,8 +393,8 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
 
     if (tipo === 'Bache' && !coordsValidas) {
       const alert = await this.alertCtrl.create({
-        header: 'Ubicación Obligatoria para Bache',
-        message: 'Para incidencias de tipo Bache es obligatorio registrar coordenadas válidas (obtenidas por GPS o ingresadas manualmente: Latitud entre -90 y 90, Longitud entre -180 y 180).',
+        header: 'Ubicación Requerida para Bache',
+        message: 'Para incidencias de tipo Bache es obligatorio registrar coordenadas válidas (por GPS o manuales).',
         buttons: ['Aceptar']
       });
       await alert.present();
@@ -418,7 +407,7 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
     await loader.present();
 
     const nuevaIncidencia: Incidencia = {
-      codigo: '', // Autogenerado por el servicio
+      codigo: '',
       tipo,
       prioridad,
       descripcion: descripcion.trim(),
@@ -426,13 +415,13 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
       sector: sector.trim(),
       fecha: new Date().toISOString().replace('T', ' ').substring(0, 16),
       estado: 'pendiente',
-      fotografia: this.fotografiaPreview || undefined,
+      fotografia: this.fotografiaPreview() || undefined,
       coordenadas: (latitud && longitud) ? { lat: Number(latitud), lng: Number(longitud) } : undefined,
-      clima: this.climaInfo || undefined
+      clima: this.climaInfo() || undefined
     };
 
     this.incidenciasService.createIncidencia(nuevaIncidencia).subscribe({
-      next: async (creada) => {
+      next: async creada => {
         await loader.dismiss();
         await this.storageService.clearDraft();
 
@@ -447,11 +436,9 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
       },
       error: async (err: any) => {
         await loader.dismiss();
-        let detalle = 'No se pudo comunicar con el servicio de oficina. Verifica la conexión a la API.';
+        let detalle = 'No se pudo comunicar con el servicio de oficina. Verifica la conexión.';
         if (err?.status === 413) {
-          detalle = 'La imagen es demasiado pesada para el servidor MockAPI (Error 413). Se comprimirá automáticamente o puedes usar una imagen de muestra.';
-        } else if (err?.status) {
-          detalle = `El servidor respondió con código HTTP ${err.status}: ${err.statusText || 'Error en petición'}.`;
+          detalle = 'La fotografía supera el límite de MockAPI (Error 413). Prueba comprimiéndola o con una foto de muestra.';
         }
         const alert = await this.alertCtrl.create({
           header: 'Error al Guardar',

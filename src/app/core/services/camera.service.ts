@@ -6,9 +6,8 @@ import { Camera, CameraResultType, CameraSource, Photo } from '@capacitor/camera
 })
 export class CameraService {
   /**
-   * R6: Captura de fotografía o selección desde galería.
-   * Devuelve la imagen como DataUrl (Base64) comprimida a menos de 30KB
-   * para asegurar compatibilidad total con el límite de carga de MockAPI.
+   * R6: Captura de fotografía con Capacitor Camera.
+   * Retorna DataUrl (Base64) comprimida para asegurar compatibilidad con MockAPI.
    */
   async capturePhoto(source: CameraSource = CameraSource.Prompt): Promise<string | null> {
     try {
@@ -16,35 +15,30 @@ export class CameraService {
         quality: 45,
         allowEditing: false,
         resultType: CameraResultType.DataUrl,
-        source: source,
-        width: 500,
+        source,
+        width: 480,
         correctOrientation: true
       });
 
-      if (image && image.dataUrl) {
-        return await this.compressDataUrl(image.dataUrl, 450, 0.5);
+      if (image?.dataUrl) {
+        return await this.compressDataUrl(image.dataUrl, 420, 0.5);
       }
       return null;
     } catch (error: any) {
       const msg = error?.message?.toLowerCase() || '';
       if (msg.includes('cancel') || msg.includes('user cancelled') || msg.includes('dismissed')) {
-        return null;
+        return null; // El usuario canceló la toma de foto; los demás campos permanecen intactos (R6)
       }
-
       if (msg.includes('permission') || msg.includes('denied') || msg.includes('denegado')) {
         throw new Error('PERMISO_DENEGADO');
       }
-
       throw new Error(error?.message || 'Error al capturar imagen');
     }
   }
 
-  /**
-   * Comprime una imagen en memoria mediante Canvas para garantizar que su peso
-   * sea de aproximadamente 15KB a 25KB, evitando el error HTTP 413 (Payload Too Large) de MockAPI.
-   */
+  // Comprime la imagen en memoria usando un canvas HTML5 para evitar error HTTP 413 de MockAPI
   private compressDataUrl(dataUrl: string, maxWidth: number, quality: number): Promise<string> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');

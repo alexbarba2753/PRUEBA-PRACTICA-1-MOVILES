@@ -24,18 +24,19 @@ export const routes: Routes = [
         loadComponent: () => import('./pages/incidencias-list/incidencias-list.page').then(m => m.IncidenciasListPage)
       },
       {
-        path: 'seguimiento',
-        loadComponent: () => import('./pages/seguimiento-list/seguimiento-list.page').then(m => m.SeguimientoListPage)
-      },
-      {
         path: 'nueva',
         loadComponent: () => import('./pages/incidencia-form/incidencia-form.page').then(m => m.IncidenciaFormPage)
+      },
+      {
+        path: 'seguimiento',
+        loadComponent: () => import('./pages/seguimiento-list/seguimiento-list.page').then(m => m.SeguimientoListPage)
       }
     ]
   },
   {
     path: 'incidencias/nueva',
-    loadComponent: () => import('./pages/incidencia-form/incidencia-form.page').then(m => m.IncidenciaFormPage)
+    redirectTo: 'tabs/nueva',
+    pathMatch: 'full'
   },
   {
     path: 'incidencias/:id',

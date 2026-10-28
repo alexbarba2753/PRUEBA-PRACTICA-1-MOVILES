@@ -1,4 +1,5 @@
 import { bootstrapApplication } from '@angular/platform-browser';
+import { provideZonelessChangeDetection } from '@angular/core';
 import {
   RouteReuseStrategy,
   provideRouter,
@@ -14,6 +15,7 @@ import { routes } from './app/app.routes';
 
 bootstrapApplication(AppComponent, {
   providers: [
+    provideZonelessChangeDetection(),
     { provide: RouteReuseStrategy, useClass: IonicRouteStrategy },
     provideIonicAngular({ mode: 'md' }),
     provideHttpClient(),

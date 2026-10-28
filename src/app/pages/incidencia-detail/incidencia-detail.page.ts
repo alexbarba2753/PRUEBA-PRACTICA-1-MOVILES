@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import {
@@ -35,17 +35,14 @@ import {
   bookmarkOutline,
   cloudOutline,
   warningOutline,
-  navigateOutline,
-  documentTextOutline,
   constructOutline,
   checkmarkDoneOutline,
   banOutline,
   refreshOutline
 } from 'ionicons/icons';
-import { Subscription } from 'rxjs';
 import { IncidenciasService } from '../../core/services/incidencias.service';
 import { StorageService } from '../../core/services/storage.service';
-import { Incidencia, EstadoIncidencia } from '../../core/models/incidencia.model';
+import { Incidencia } from '../../core/models/incidencia.model';
 
 @Component({
   selector: 'app-incidencia-detail',
@@ -74,13 +71,16 @@ import { Incidencia, EstadoIncidencia } from '../../core/models/incidencia.model
   templateUrl: './incidencia-detail.page.html',
   styleUrls: ['./incidencia-detail.page.scss']
 })
-export class IncidenciaDetailPage implements OnInit, OnDestroy {
-  incidencia: Incidencia | null = null;
-  isLoading = true;
-  hasError = false;
-  isMarked = false;
+export class IncidenciaDetailPage implements OnInit {
+  incidencia = signal<Incidencia | null>(null);
+  isLoading = signal(true);
+  hasError = signal(false);
 
-  private routeSub = new Subscription();
+  // Computado reactivo: detecta inmediatamente si la incidencia está en seguimiento local (R1)
+  isMarked = computed(() => {
+    const inc = this.incidencia();
+    return this.storageService.isMarked(inc?.codigo, inc?.id);
+  });
 
   constructor(
     private route: ActivatedRoute,
@@ -88,8 +88,7 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
     private storageService: StorageService,
     private alertCtrl: AlertController,
     private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController,
-    private cdr: ChangeDetectorRef
+    private toastCtrl: ToastController
   ) {
     addIcons({
       locationOutline,
@@ -101,8 +100,6 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
       bookmarkOutline,
       cloudOutline,
       warningOutline,
-      navigateOutline,
-      documentTextOutline,
       constructOutline,
       checkmarkDoneOutline,
       banOutline,
@@ -111,75 +108,58 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
-    this.routeSub.add(
-      this.route.paramMap.subscribe(params => {
-        const id = params.get('id');
-        if (id) {
-          this.loadIncidencia(id);
-        }
-      })
-    );
-  }
-
-  ngOnDestroy(): void {
-    this.routeSub.unsubscribe();
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.loadIncidencia(id);
+    }
   }
 
   loadIncidencia(id: string): void {
-    this.isLoading = true;
-    this.hasError = false;
-    this.cdr.markForCheck();
+    this.isLoading.set(true);
+    this.hasError.set(false);
 
     this.incidenciasService.getIncidenciaById(id).subscribe({
-      next: async (item) => {
-        this.incidencia = item;
-        this.isLoading = false;
-        this.isMarked = await this.storageService.isMarked(item.codigo, item.id);
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
+      next: item => {
+        this.incidencia.set(item);
+        this.isLoading.set(false);
       },
       error: () => {
-        this.isLoading = false;
-        this.hasError = true;
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
+        this.isLoading.set(false);
+        this.hasError.set(true);
       }
     });
   }
 
   onRefresh(event: Event): void {
     const customEvent = event as RefresherCustomEvent;
-    if (!this.incidencia) {
+    const current = this.incidencia();
+    if (!current) {
       customEvent.target.complete();
       return;
     }
-    const id = this.incidencia.id || this.incidencia.codigo;
+    const id = current.id || current.codigo;
     this.incidenciasService.getIncidenciaById(id).subscribe({
-      next: async (item) => {
-        this.incidencia = item;
-        this.isMarked = await this.storageService.isMarked(item.codigo, item.id);
+      next: item => {
+        this.incidencia.set(item);
         customEvent.target.complete();
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
       },
-      error: () => {
-        customEvent.target.complete();
-        this.cdr.markForCheck();
-      }
+      error: () => customEvent.target.complete()
     });
   }
 
+  // R1: Conmutar seguimiento local
   async toggleSeguimiento(): Promise<void> {
-    if (!this.incidencia) return;
-    const code = this.incidencia.codigo || this.incidencia.id || '';
-    this.isMarked = await this.storageService.toggleMark(code);
+    const current = this.incidencia();
+    if (!current) return;
+    const code = current.codigo || current.id || '';
+    const marked = await this.storageService.toggleMark(code);
 
     const toast = await this.toastCtrl.create({
-      message: this.isMarked
+      message: marked
         ? `Incidencia ${code} guardada en seguimiento local.`
         : `Incidencia ${code} eliminada de seguimiento local.`,
       duration: 2000,
-      color: this.isMarked ? 'warning' : 'medium'
+      color: marked ? 'warning' : 'medium'
     });
     await toast.present();
   }
@@ -188,26 +168,26 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
   // R9: REGLAS DE TRANSICIÓN Y ACTUALIZACIÓN
   // ==========================================
 
+  // Transición: pendiente -> en_proceso
   async cambiarAEnProceso(): Promise<void> {
-    if (!this.incidencia) return;
+    const current = this.incidencia();
+    if (!current) return;
 
-    if (this.incidencia.estado === 'resuelta') {
+    if (current.estado === 'resuelta') {
       await this.mostrarAlertaTransicionInvalida();
       return;
     }
 
-    const loader = await this.loadingCtrl.create({ message: 'Actualizando estado en servicio...' });
+    const loader = await this.loadingCtrl.create({ message: 'Actualizando estado...' });
     await loader.present();
 
-    const id = this.incidencia.id || this.incidencia.codigo;
+    const id = current.id || current.codigo;
     this.incidenciasService.updateIncidencia(id, { estado: 'en_proceso' }).subscribe({
-      next: async (updated) => {
+      next: async updated => {
         await loader.dismiss();
-        this.incidencia = updated;
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
+        this.incidencia.set(updated);
         const toast = await this.toastCtrl.create({
-          message: 'Estado cambiado a "En Proceso".',
+          message: 'Estado actualizado a "En Proceso".',
           duration: 2500,
           color: 'primary'
         });
@@ -215,20 +195,17 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
       },
       error: async () => {
         await loader.dismiss();
-        const alert = await this.alertCtrl.create({
-          header: 'Error',
-          message: 'No se pudo actualizar el estado en el servicio remoto.',
-          buttons: ['Aceptar']
-        });
-        await alert.present();
+        this.mostrarAlertaError();
       }
     });
   }
 
+  // Transición: pendiente / en_proceso -> resuelta (requiere observación obligatoria)
   async solicitarResolucion(): Promise<void> {
-    if (!this.incidencia) return;
+    const current = this.incidencia();
+    if (!current) return;
 
-    if (this.incidencia.estado === 'resuelta') {
+    if (current.estado === 'resuelta') {
       const toast = await this.toastCtrl.create({
         message: 'Esta incidencia ya se encuentra resuelta.',
         duration: 2000
@@ -237,66 +214,51 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
       return;
     }
 
-    // Regla R9: Para marcarla como resuelta, es OBLIGATORIO ingresar una observación
     const alert = await this.alertCtrl.create({
       header: 'Resolver Incidencia',
-      subHeader: 'Observación de cierre obligatoria',
-      message: 'Detalla las acciones o trabajos realizados por la cuadrilla técnica para dar por resuelta esta incidencia:',
+      subHeader: 'Observación de cierre obligatoria (R9)',
+      message: 'Ingresa el detalle de las acciones de mantenimiento realizadas:',
       inputs: [
         {
           name: 'observacion',
           type: 'textarea',
-          placeholder: 'Ej: Cuadrilla técnica realizó reparación y asfaltado en la calzada...'
+          placeholder: 'Ej: Cuadrilla técnica realizó reparación y asfaltado...'
         }
       ],
       buttons: [
-        {
-          text: 'Cancelar',
-          role: 'cancel'
-        },
+        { text: 'Cancelar', role: 'cancel' },
         {
           text: 'Marcar como Resuelta',
-          handler: (data) => {
-            const observacion = data?.observacion?.trim();
-            if (!observacion) {
+          handler: data => {
+            const obs = data?.observacion?.trim();
+            if (!obs) {
               this.mostrarToastErrorObservacion();
-              return false; // Evita cerrar el diálogo si no ingresa observación
+              return false; // Impide cerrar diálogo si falta observación
             }
-            this.ejecutarResolucion(observacion);
+            this.ejecutarResolucion(obs);
             return true;
           }
         }
       ]
     });
-
     await alert.present();
   }
 
-  private async mostrarToastErrorObservacion(): Promise<void> {
-    const toast = await this.toastCtrl.create({
-      message: 'Debe ingresar una observación obligatoria para resolver la incidencia.',
-      duration: 3000,
-      color: 'danger'
-    });
-    await toast.present();
-  }
-
   private async ejecutarResolucion(observacion: string): Promise<void> {
-    if (!this.incidencia) return;
+    const current = this.incidencia();
+    if (!current) return;
 
-    const loader = await this.loadingCtrl.create({ message: 'Registrando resolución en servicio...' });
+    const loader = await this.loadingCtrl.create({ message: 'Registrando resolución...' });
     await loader.present();
 
-    const id = this.incidencia.id || this.incidencia.codigo;
+    const id = current.id || current.codigo;
     this.incidenciasService.updateIncidencia(id, {
       estado: 'resuelta',
-      observacion: observacion
+      observacion
     }).subscribe({
-      next: async (updated) => {
+      next: async updated => {
         await loader.dismiss();
-        this.incidencia = updated;
-        this.cdr.markForCheck();
-        this.cdr.detectChanges();
+        this.incidencia.set(updated);
         const toast = await this.toastCtrl.create({
           message: 'Incidencia marcada como RESUELTA exitosamente.',
           duration: 3000,
@@ -306,26 +268,39 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
       },
       error: async () => {
         await loader.dismiss();
-        const alert = await this.alertCtrl.create({
-          header: 'Error',
-          message: 'No se pudo guardar la resolución en el servicio remoto.',
-          buttons: ['Aceptar']
-        });
-        await alert.present();
+        this.mostrarAlertaError();
       }
     });
   }
 
+  // Regla R9: Demostración de intento de regresar una incidencia resuelta a pendiente
   async intentarRegresarAPendiente(): Promise<void> {
-    // Caso de prueba para defensa R9: Intentar devolver una incidencia resuelta al estado pendiente
     await this.mostrarAlertaTransicionInvalida();
   }
 
   private async mostrarAlertaTransicionInvalida(): Promise<void> {
     const alert = await this.alertCtrl.create({
-      header: 'Acción No Permitida',
-      message: 'Regla de negocio (R9): Una incidencia en estado RESUELTA no puede regresar a estado "Pendiente" ni "En Proceso" por auditoría y control de obras públicas.',
+      header: 'Transición No Permitida (R9)',
+      message: 'Una incidencia en estado RESUELTA no puede regresar a estado "Pendiente" ni "En Proceso".',
       buttons: ['Entendido']
+    });
+    await alert.present();
+  }
+
+  private async mostrarToastErrorObservacion(): Promise<void> {
+    const toast = await this.toastCtrl.create({
+      message: 'La observación es estrictamente obligatoria para resolver la incidencia.',
+      duration: 3000,
+      color: 'danger'
+    });
+    await toast.present();
+  }
+
+  private async mostrarAlertaError(): Promise<void> {
+    const alert = await this.alertCtrl.create({
+      header: 'Error',
+      message: 'No se pudo comunicar con el servicio de oficina.',
+      buttons: ['Aceptar']
     });
     await alert.present();
   }

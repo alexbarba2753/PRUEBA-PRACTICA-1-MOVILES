@@ -16,12 +16,7 @@ import {
   bookmark,
   bookmarkOutline,
   locationOutline,
-  calendarOutline,
-  alertCircleOutline,
-  navigateOutline,
-  checkmarkCircleOutline,
-  timeOutline,
-  flashOutline
+  calendarOutline
 } from 'ionicons/icons';
 import { Incidencia } from '../../../core/models/incidencia.model';
 
@@ -42,7 +37,7 @@ import { Incidencia } from '../../../core/models/incidencia.model';
   ],
   template: `
     <ion-card class="incidencia-card" [routerLink]="['/incidencias', incidencia.id || incidencia.codigo]">
-      <!-- Foto de evidencia (si existe) -->
+      <!-- Foto de evidencia (R2, R6) -->
       @if (incidencia.fotografia) {
         <div class="card-image-wrapper">
           <img [src]="incidencia.fotografia" [alt]="incidencia.tipo" class="card-image" loading="lazy" />
@@ -106,10 +101,6 @@ import { Incidencia } from '../../../core/models/incidencia.model';
       background: var(--ion-card-background, #ffffff);
       overflow: hidden;
       cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease;
-    }
-    .incidencia-card:active {
-      transform: scale(0.99);
     }
     .card-image-wrapper {
       position: relative;
@@ -131,7 +122,6 @@ import { Incidencia } from '../../../core/models/incidencia.model';
       font-weight: 700;
       padding: 4px 8px;
       border-radius: 6px;
-      letter-spacing: 0.5px;
       color: #ffffff;
       box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     }
@@ -186,10 +176,7 @@ import { Incidencia } from '../../../core/models/incidencia.model';
       font-size: 13px;
       color: var(--ion-color-medium, #666666);
     }
-    .card-subtitle ion-icon {
-      font-size: 15px;
-      flex-shrink: 0;
-    }
+    .card-subtitle ion-icon { font-size: 15px; flex-shrink: 0; }
     .description {
       font-size: 14px;
       color: var(--ion-color-step-700, #444444);
@@ -209,11 +196,7 @@ import { Incidencia } from '../../../core/models/incidencia.model';
       font-size: 12px;
       color: var(--ion-color-medium, #777777);
     }
-    .meta-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
+    .meta-item { display: flex; align-items: center; gap: 4px; }
     .clima-pill {
       background: #f1f5f9;
       padding: 2px 8px;
@@ -233,17 +216,7 @@ export class IncidenciaCardComponent {
   @Output() toggleSeguimiento = new EventEmitter<Incidencia>();
 
   constructor() {
-    addIcons({
-      bookmark,
-      bookmarkOutline,
-      locationOutline,
-      calendarOutline,
-      alertCircleOutline,
-      navigateOutline,
-      checkmarkCircleOutline,
-      timeOutline,
-      flashOutline
-    });
+    addIcons({ bookmark, bookmarkOutline, locationOutline, calendarOutline });
   }
 
   onToggleSeguimiento(event: Event): void {

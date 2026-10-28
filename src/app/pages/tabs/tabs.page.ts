@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {
   IonTabs,
@@ -11,17 +11,11 @@ import {
 import { addIcons } from 'ionicons';
 import {
   homeOutline,
-  home,
   listOutline,
-  list,
   bookmarkOutline,
-  bookmark,
-  addCircleOutline,
   addCircle
 } from 'ionicons/icons';
 import { StorageService } from '../../core/services/storage.service';
-import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-tabs',
@@ -56,10 +50,8 @@ import { map } from 'rxjs/operators';
         <ion-tab-button tab="seguimiento">
           <ion-icon name="bookmark-outline"></ion-icon>
           <ion-label>Seguimiento</ion-label>
-          @if ((markedCount$ | async); as count) {
-            @if (count > 0) {
-              <ion-badge color="warning">{{ count }}</ion-badge>
-            }
+          @if (markedCount() > 0) {
+            <ion-badge color="warning">{{ markedCount() }}</ion-badge>
           }
         </ion-tab-button>
       </ion-tab-bar>
@@ -81,21 +73,10 @@ import { map } from 'rxjs/operators';
   `]
 })
 export class TabsPage {
-  markedCount$: Observable<number>;
+  // Conteo reactivo de incidencias en seguimiento local (R1)
+  markedCount = computed(() => this.storageService.markedCodes().length);
 
   constructor(private storageService: StorageService) {
-    addIcons({
-      homeOutline,
-      home,
-      listOutline,
-      list,
-      bookmarkOutline,
-      bookmark,
-      addCircleOutline,
-      addCircle
-    });
-    this.markedCount$ = this.storageService.markedCodes$.pipe(
-      map(codes => codes.length)
-    );
+    addIcons({ homeOutline, listOutline, bookmarkOutline, addCircle });
   }
 }

@@ -29,7 +29,7 @@
         @if (incidenciaForm.get('tipo')?.value === 'Bache') {
           <div class="field-hint hint-warning">
             <ion-icon name="alert-circle-outline"></ion-icon>
-            <span>Para incidencias de tipo Bache, la ubicación GPS o manual es obligatoria.</span>
+            <span>Para incidencias de tipo Bache, la ubicación GPS o manual es obligatoria (R7).</span>
           </div>
         }
 
@@ -45,7 +45,7 @@
         @if (incidenciaForm.get('prioridad')?.value === 'alta') {
           <div class="field-hint hint-danger">
             <ion-icon name="warning-outline"></ion-icon>
-            <span>Prioridad ALTA seleccionada: La fotografía de evidencia es obligatoria.</span>
+            <span>Prioridad ALTA: La fotografía de evidencia es obligatoria (R5).</span>
           </div>
         }
 
@@ -55,7 +55,7 @@
           <ion-textarea
             formControlName="descripcion"
             rows="3"
-            placeholder="Detalla la avería, gravedad o afectación peatonal/vehicular...">
+            placeholder="Detalla la avería, gravedad o afectación...">
           </ion-textarea>
         </ion-item>
 
@@ -84,8 +84,8 @@
       <ion-card-header>
         <div class="card-header-flex">
           <ion-card-title>Ubicación y Coordenadas</ion-card-title>
-          <ion-button size="small" fill="outline" color="secondary" (click)="obtenerUbicacionGps()" [disabled]="isCapturingGps">
-            @if (isCapturingGps) {
+          <ion-button size="small" fill="outline" color="secondary" (click)="obtenerUbicacionGps()" [disabled]="isCapturingGps()">
+            @if (isCapturingGps()) {
               <ion-spinner name="dots"></ion-spinner>
             } @else {
               <ion-icon name="locate-outline" slot="start"></ion-icon>
@@ -122,8 +122,8 @@
       <ion-card-header>
         <div class="card-header-flex">
           <ion-card-title>Condiciones Meteorológicas</ion-card-title>
-          <ion-button size="small" fill="outline" (click)="consultarClima()" [disabled]="isLoadingClima">
-            @if (isLoadingClima) {
+          <ion-button size="small" fill="outline" (click)="consultarClima()" [disabled]="isLoadingClima()">
+            @if (isLoadingClima()) {
               <ion-spinner name="dots"></ion-spinner>
             } @else {
               <ion-icon name="cloud-outline" slot="start"></ion-icon>
@@ -134,43 +134,43 @@
       </ion-card-header>
 
       <ion-card-content>
-        @if (climaInfo) {
+        @if (climaInfo(); as info) {
           <div class="clima-result-box">
             <div class="clima-metric">
-              <span class="clima-val">{{ climaInfo.temperatura }} °C</span>
+              <span class="clima-val">{{ info.temperatura }} °C</span>
               <span class="clima-sub">Temperatura actual</span>
             </div>
             <div class="clima-metric">
-              <span class="clima-val">{{ climaInfo.precipitacion }} mm</span>
+              <span class="clima-val">{{ info.precipitacion }} mm</span>
               <span class="clima-sub">Lluvia última hora</span>
             </div>
             <div class="clima-metric">
-              <span class="clima-val text-condicion">{{ climaInfo.condicion }}</span>
+              <span class="clima-val text-condicion">{{ info.condicion }}</span>
               <span class="clima-sub">Condición atmosférica</span>
             </div>
           </div>
 
           <!-- Advertencia de lluvia superior a 5mm (R4) -->
-          @if (climaInfo.advertenciaLluvia) {
+          @if (info.advertenciaLluvia) {
             <div class="alert-box-warning">
               <ion-icon name="warning-outline"></ion-icon>
               <div>
-                <strong>Advertencia climática:</strong>
-                <p>La precipitación de la última hora supera los 5 mm ({{ climaInfo.precipitacion }} mm). Las condiciones meteorológicas adversas podrían dificultar las labores de mantenimiento en campo.</p>
+                <strong>Advertencia climática (R4):</strong>
+                <p>La precipitación de la última hora supera los 5 mm ({{ info.precipitacion }} mm). Las condiciones podrían dificultar el mantenimiento.</p>
               </div>
             </div>
           }
         }
 
-        <!-- Error del servicio meteorológico (permite continuar sin bloquear) -->
-        @if (climaError) {
+        <!-- Error del servicio meteorológico (permite continuar sin bloquear el registro) -->
+        @if (climaError(); as err) {
           <div class="alert-box-info">
             <ion-icon name="alert-circle-outline"></ion-icon>
-            <p>{{ climaError }}</p>
+            <p>{{ err }}</p>
           </div>
         }
 
-        @if (!climaInfo && !climaError && !isLoadingClima) {
+        @if (!climaInfo() && !climaError() && !isLoadingClima()) {
           <p class="clima-placeholder-note">
             Presiona <strong>"Consultar Clima"</strong> para obtener el pronóstico en tiempo real mediante Open-Meteo para las coordenadas indicadas.
           </p>
@@ -185,9 +185,9 @@
       </ion-card-header>
 
       <ion-card-content>
-        @if (fotografiaPreview) {
+        @if (fotografiaPreview(); as photo) {
           <div class="photo-preview-box">
-            <img [src]="fotografiaPreview" alt="Previsualización de evidencia" class="preview-img" />
+            <img [src]="photo" alt="Previsualización de evidencia" class="preview-img" />
             <div class="photo-actions">
               <ion-button color="light" size="small" (click)="tomarFotografia()">
                 <ion-icon name="camera-outline" slot="start"></ion-icon>
@@ -224,7 +224,7 @@
 
     <!-- Botón de Envío -->
     <div class="submit-container">
-      <ion-button expand="block" type="submit" color="primary" size="large" class="submit-btn" [disabled]="isSubmitting">
+      <ion-button expand="block" type="submit" color="primary" size="large" class="submit-btn" [disabled]="isSubmitting()">
         <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
         Guardar Incidencia
       </ion-button>

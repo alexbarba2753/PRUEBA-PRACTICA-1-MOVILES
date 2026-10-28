@@ -1,0 +1,210 @@
+<ion-header [translucent]="true" class="ion-no-border">
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/incidencias"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Registrar Incidencia</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="form-content">
+  <form [formGroup]="incidenciaForm" (ngSubmit)="onSubmit()">
+
+    <!-- Tarjeta: Datos Generales (R5) -->
+    <ion-card class="form-card">
+      <ion-card-header>
+        <ion-card-title>Información General</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <!-- Tipo de Incidencia -->
+        <ion-item lines="inset" class="custom-input-item">
+          <ion-label position="stacked">Tipo de Incidencia *</ion-label>
+          <ion-select formControlName="tipo" interface="action-sheet" placeholder="Seleccione el tipo">
+            @for (t of tiposDisponibles; track t) {
+              <ion-select-option [value]="t">{{ t }}</ion-select-option>
+            }
+          </ion-select>
+        </ion-item>
+        @if (incidenciaForm.get('tipo')?.value === 'Bache') {
+          <div class="field-hint hint-warning">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <span>Para incidencias de tipo Bache, la ubicación GPS o manual es obligatoria.</span>
+          </div>
+        }
+
+        <!-- Prioridad -->
+        <ion-item lines="inset" class="custom-input-item">
+          <ion-label position="stacked">Prioridad de Atención *</ion-label>
+          <ion-select formControlName="prioridad" interface="popover" placeholder="Seleccione prioridad">
+            <ion-select-option value="baja">Baja</ion-select-option>
+            <ion-select-option value="media">Media</ion-select-option>
+            <ion-select-option value="alta">Alta (Exige fotografía)</ion-select-option>
+          </ion-select>
+        </ion-item>
+        @if (incidenciaForm.get('prioridad')?.value === 'alta') {
+          <div class="field-hint hint-danger">
+            <ion-icon name="warning-outline"></ion-icon>
+            <span>Prioridad ALTA seleccionada: La fotografía de evidencia es obligatoria.</span>
+          </div>
+        }
+
+        <!-- Descripción -->
+        <ion-item lines="inset" class="custom-input-item">
+          <ion-label position="stacked">Descripción del Problema *</ion-label>
+          <ion-textarea
+            formControlName="descripcion"
+            rows="3"
+            placeholder="Detalla la avería, gravedad o afectación peatonal/vehicular...">
+          </ion-textarea>
+        </ion-item>
+
+        <!-- Sector -->
+        <ion-item lines="inset" class="custom-input-item">
+          <ion-label position="stacked">Sector / Barrio *</ion-label>
+          <ion-input
+            formControlName="sector"
+            placeholder="Ej: La Mariscal, Calderón, Centro Histórico...">
+          </ion-input>
+        </ion-item>
+
+        <!-- Dirección -->
+        <ion-item lines="inset" class="custom-input-item">
+          <ion-label position="stacked">Dirección / Intersección *</ion-label>
+          <ion-input
+            formControlName="direccion"
+            placeholder="Ej: Av. Amazonas y República...">
+          </ion-input>
+        </ion-item>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Tarjeta: Coordenadas y Ubicación (R7) -->
+    <ion-card class="form-card">
+      <ion-card-header>
+        <ion-card-title>Ubicación y Coordenadas</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        <div class="coords-row">
+          <ion-item lines="inset" class="custom-input-item half-field">
+            <ion-label position="stacked">Latitud</ion-label>
+            <ion-input type="number" step="0.0001" formControlName="latitud" placeholder="-0.1807"></ion-input>
+          </ion-item>
+
+          <ion-item lines="inset" class="custom-input-item half-field">
+            <ion-label position="stacked">Longitud</ion-label>
+            <ion-input type="number" step="0.0001" formControlName="longitud" placeholder="-78.4678"></ion-input>
+          </ion-item>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Tarjeta: Condiciones Meteorológicas (R4) -->
+    <ion-card class="form-card">
+      <ion-card-header>
+        <div class="card-header-flex">
+          <ion-card-title>Condiciones Meteorológicas</ion-card-title>
+          <ion-button size="small" fill="outline" (click)="consultarClima()" [disabled]="isLoadingClima">
+            @if (isLoadingClima) {
+              <ion-spinner name="dots"></ion-spinner>
+            } @else {
+              <ion-icon name="cloud-outline" slot="start"></ion-icon>
+              Consultar Clima
+            }
+          </ion-button>
+        </div>
+      </ion-card-header>
+
+      <ion-card-content>
+        @if (climaInfo) {
+          <div class="clima-result-box">
+            <div class="clima-metric">
+              <span class="clima-val">{{ climaInfo.temperatura }} °C</span>
+              <span class="clima-sub">Temperatura actual</span>
+            </div>
+            <div class="clima-metric">
+              <span class="clima-val">{{ climaInfo.precipitacion }} mm</span>
+              <span class="clima-sub">Lluvia última hora</span>
+            </div>
+            <div class="clima-metric">
+              <span class="clima-val text-condicion">{{ climaInfo.condicion }}</span>
+              <span class="clima-sub">Condición atmosférica</span>
+            </div>
+          </div>
+
+          <!-- Advertencia de lluvia superior a 5mm (R4) -->
+          @if (climaInfo.advertenciaLluvia) {
+            <div class="alert-box-warning">
+              <ion-icon name="warning-outline"></ion-icon>
+              <div>
+                <strong>Advertencia climática:</strong>
+                <p>La precipitación de la última hora supera los 5 mm ({{ climaInfo.precipitacion }} mm). Las condiciones meteorológicas adversas podrían dificultar las labores de mantenimiento en campo.</p>
+              </div>
+            </div>
+          }
+        }
+
+        <!-- Error del servicio meteorológico (permite continuar sin bloquear) -->
+        @if (climaError) {
+          <div class="alert-box-info">
+            <ion-icon name="alert-circle-outline"></ion-icon>
+            <p>{{ climaError }}</p>
+          </div>
+        }
+
+        @if (!climaInfo && !climaError && !isLoadingClima) {
+          <p class="clima-placeholder-note">
+            Presiona <strong>"Consultar Clima"</strong> para obtener el pronóstico en tiempo real mediante Open-Meteo para las coordenadas indicadas.
+          </p>
+        }
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Tarjeta: Evidencia Fotográfica (R6) -->
+    <ion-card class="form-card">
+      <ion-card-header>
+        <ion-card-title>Evidencia Fotográfica</ion-card-title>
+      </ion-card-header>
+
+      <ion-card-content>
+        @if (fotografiaPreview) {
+          <div class="photo-preview-box">
+            <img [src]="fotografiaPreview" alt="Previsualización de evidencia" class="preview-img" />
+            <div class="photo-actions">
+              <ion-button color="light" size="small" (click)="tomarFotografia()">
+                <ion-icon name="camera-outline" slot="start"></ion-icon>
+                Cambiar Foto
+              </ion-button>
+              <ion-button color="danger" size="small" fill="outline" (click)="eliminarFotografia()">
+                <ion-icon name="trash-outline" slot="start"></ion-icon>
+                Eliminar
+              </ion-button>
+            </div>
+          </div>
+        } @else {
+          <div class="photo-placeholder" (click)="tomarFotografia()">
+            <ion-icon name="camera-outline"></ion-icon>
+            <p>Capturar o adjuntar fotografía</p>
+            <span class="photo-hint">
+              @if (incidenciaForm.get('prioridad')?.value === 'alta') {
+                <strong class="text-danger">* Obligatoria para prioridad alta</strong>
+              } @else {
+                Opcional para prioridad baja o media
+              }
+            </span>
+          </div>
+        }
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Botón de Envío -->
+    <div class="submit-container">
+      <ion-button expand="block" type="submit" color="primary" size="large" class="submit-btn" [disabled]="isSubmitting">
+        <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+        Guardar Incidencia
+      </ion-button>
+    </div>
+
+  </form>
+</ion-content>

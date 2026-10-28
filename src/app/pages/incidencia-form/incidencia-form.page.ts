@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -111,7 +111,8 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
     private router: Router,
     private alertCtrl: AlertController,
     private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController
+    private toastCtrl: ToastController,
+    private cdr: ChangeDetectorRef
   ) {
     addIcons({
       cameraOutline,
@@ -217,6 +218,8 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
           fotografia: this.fotografiaPreview,
           clima: this.climaInfo
         });
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
       // Si el usuario canceló, photoDataUrl es null y los demás campos quedan intactos
     } catch (err: any) {
@@ -286,6 +289,8 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
       }
     } finally {
       this.isCapturingGps = false;
+      this.cdr.markForCheck();
+      this.cdr.detectChanges();
     }
   }
 
@@ -314,10 +319,14 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
           fotografia: this.fotografiaPreview,
           clima: this.climaInfo
         });
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: err => {
         this.isLoadingClima = false;
         this.climaError = err.message || 'El servicio meteorológico no respondió. Puede continuar con el registro.';
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     });
   }

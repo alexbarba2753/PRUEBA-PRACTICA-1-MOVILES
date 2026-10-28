@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterModule } from '@angular/router';
 import {
@@ -88,7 +88,8 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
     private storageService: StorageService,
     private alertCtrl: AlertController,
     private loadingCtrl: LoadingController,
-    private toastCtrl: ToastController
+    private toastCtrl: ToastController,
+    private cdr: ChangeDetectorRef
   ) {
     addIcons({
       locationOutline,
@@ -127,6 +128,7 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
   loadIncidencia(id: string): void {
     this.isLoading = true;
     this.hasError = false;
+    this.cdr.markForCheck();
 
     this.incidenciasService.getIncidenciaById(id).subscribe({
       next: async (item) => {
@@ -134,10 +136,14 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
         this.isLoading = false;
         const code = item.codigo || item.id || '';
         this.isMarked = await this.storageService.isMarked(code);
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoading = false;
         this.hasError = true;
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     });
   }
@@ -155,9 +161,12 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
         const code = item.codigo || item.id || '';
         this.isMarked = await this.storageService.isMarked(code);
         customEvent.target.complete();
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: () => {
         customEvent.target.complete();
+        this.cdr.markForCheck();
       }
     });
   }
@@ -197,6 +206,8 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
       next: async (updated) => {
         await loader.dismiss();
         this.incidencia = updated;
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
         const toast = await this.toastCtrl.create({
           message: 'Estado cambiado a "En Proceso".',
           duration: 2500,
@@ -286,6 +297,8 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
       next: async (updated) => {
         await loader.dismiss();
         this.incidencia = updated;
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
         const toast = await this.toastCtrl.create({
           message: 'Incidencia marcada como RESUELTA exitosamente.',
           duration: 3000,

@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import {
@@ -63,7 +63,8 @@ export class SeguimientoListPage implements OnInit, OnDestroy {
 
   constructor(
     private incidenciasService: IncidenciasService,
-    private storageService: StorageService
+    private storageService: StorageService,
+    private cdr: ChangeDetectorRef
   ) {
     addIcons({
       bookmarkOutline,
@@ -89,19 +90,28 @@ export class SeguimientoListPage implements OnInit, OnDestroy {
     );
   }
 
+  ionViewWillEnter(): void {
+    this.loadSeguimiento();
+  }
+
   ngOnDestroy(): void {
     this.subs.unsubscribe();
   }
 
   loadSeguimiento(): void {
     this.isLoading = true;
+    this.cdr.markForCheck();
     this.incidenciasService.getSeguimientoIncidencias().subscribe({
       next: items => {
         this.incidencias = items;
         this.isLoading = false;
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: () => {
         this.isLoading = false;
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     });
   }
@@ -112,9 +122,12 @@ export class SeguimientoListPage implements OnInit, OnDestroy {
       next: items => {
         this.incidencias = items;
         customEvent.target.complete();
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: () => {
         customEvent.target.complete();
+        this.cdr.markForCheck();
       }
     });
   }

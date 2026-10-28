@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
@@ -87,7 +87,8 @@ export class IncidenciasListPage implements OnInit, OnDestroy {
 
   constructor(
     private incidenciasService: IncidenciasService,
-    private storageService: StorageService
+    private storageService: StorageService,
+    private cdr: ChangeDetectorRef
   ) {
     addIcons({
       addOutline,
@@ -105,6 +106,7 @@ export class IncidenciasListPage implements OnInit, OnDestroy {
     this.subs.add(
       this.storageService.markedCodes$.subscribe(codes => {
         this.markedCodes = codes;
+        this.cdr.markForCheck();
       })
     );
 
@@ -118,6 +120,14 @@ export class IncidenciasListPage implements OnInit, OnDestroy {
     this.loadIncidencias(1, true);
   }
 
+  ionViewWillEnter(): void {
+    if (this.incidencias.length === 0 && !this.isLoading) {
+      this.loadIncidencias(1, true);
+    } else {
+      this.cdr.markForCheck();
+    }
+  }
+
   ngOnDestroy(): void {
     this.subs.unsubscribe();
   }
@@ -127,6 +137,7 @@ export class IncidenciasListPage implements OnInit, OnDestroy {
       this.isLoading = true;
       this.hasError = false;
       this.currentPage = 1;
+      this.cdr.markForCheck();
     }
 
     this.incidenciasService.getIncidencias(page, this.pageSize).subscribe({
@@ -150,6 +161,9 @@ export class IncidenciasListPage implements OnInit, OnDestroy {
         if (event) {
           event.target.complete();
         }
+
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: err => {
         this.isLoading = false;
@@ -158,6 +172,9 @@ export class IncidenciasListPage implements OnInit, OnDestroy {
         if (event) {
           event.target.complete();
         }
+
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     });
   }
@@ -181,10 +198,14 @@ export class IncidenciasListPage implements OnInit, OnDestroy {
         this.hasError = false;
         this.applyFilter();
         customEvent.target.complete();
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: () => {
         this.hasError = true;
         customEvent.target.complete();
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       }
     });
   }
@@ -210,6 +231,7 @@ export class IncidenciasListPage implements OnInit, OnDestroy {
   applyFilter(): void {
     if (!this.searchTerm.trim()) {
       this.filteredIncidencias = [...this.incidencias];
+      this.cdr.markForCheck();
       return;
     }
     const term = this.searchTerm.toLowerCase();
@@ -220,6 +242,7 @@ export class IncidenciasListPage implements OnInit, OnDestroy {
       i.codigo.toLowerCase().includes(term) ||
       i.descripcion.toLowerCase().includes(term)
     );
+    this.cdr.markForCheck();
   }
 
   onSearchChange(event: CustomEvent): void {

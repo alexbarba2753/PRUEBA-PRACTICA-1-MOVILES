@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, of, throwError, BehaviorSubject } from 'rxjs';
+import { Observable, of, throwError, Subject } from 'rxjs';
 import { map, catchError, tap, switchMap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { Incidencia, IncidenciasPaginadasResponse } from '../models/incidencia.model';
@@ -10,7 +10,7 @@ import { StorageService } from './storage.service';
   providedIn: 'root'
 })
 export class IncidenciasService {
-  private updatesSubject = new BehaviorSubject<void>(undefined);
+  private updatesSubject = new Subject<void>();
   public updates$ = this.updatesSubject.asObservable();
 
   constructor(

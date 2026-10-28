@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import { Component, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import {
@@ -256,7 +256,8 @@ export class DashboardPage implements OnInit, OnDestroy {
 
   constructor(
     private incidenciasService: IncidenciasService,
-    private storageService: StorageService
+    private storageService: StorageService,
+    private cdr: ChangeDetectorRef
   ) {
     addIcons({
       warningOutline,
@@ -281,6 +282,8 @@ export class DashboardPage implements OnInit, OnDestroy {
     this.subs.add(
       this.storageService.markedCodes$.subscribe(codes => {
         this.metrics.seguimiento = codes.length;
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       })
     );
   }
@@ -298,9 +301,12 @@ export class DashboardPage implements OnInit, OnDestroy {
         this.metrics.enProceso = list.filter(i => i.estado === 'en_proceso').length;
         this.metrics.resueltas = list.filter(i => i.estado === 'resuelta').length;
         customEvent.target.complete();
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
       },
       error: () => {
         customEvent.target.complete();
+        this.cdr.markForCheck();
       }
     });
   }
@@ -310,11 +316,18 @@ export class DashboardPage implements OnInit, OnDestroy {
   }
 
   loadMetrics(): void {
-    this.incidenciasService.getAllIncidencias().subscribe(list => {
-      this.metrics.total = list.length;
-      this.metrics.pendientes = list.filter(i => i.estado === 'pendiente').length;
-      this.metrics.enProceso = list.filter(i => i.estado === 'en_proceso').length;
-      this.metrics.resueltas = list.filter(i => i.estado === 'resuelta').length;
+    this.incidenciasService.getAllIncidencias().subscribe({
+      next: list => {
+        this.metrics.total = list.length;
+        this.metrics.pendientes = list.filter(i => i.estado === 'pendiente').length;
+        this.metrics.enProceso = list.filter(i => i.estado === 'en_proceso').length;
+        this.metrics.resueltas = list.filter(i => i.estado === 'resuelta').length;
+        this.cdr.markForCheck();
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.cdr.markForCheck();
+      }
     });
   }
 }

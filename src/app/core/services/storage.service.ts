@@ -44,9 +44,9 @@ export class StorageService {
     }
   }
 
-  async isMarked(codigo: string): Promise<boolean> {
+  async isMarked(codigo?: string, id?: string): Promise<boolean> {
     const codes = await this.getMarkedCodes();
-    return codes.includes(codigo);
+    return (!!codigo && codes.includes(codigo)) || (!!id && codes.includes(id));
   }
 
   async toggleMark(codigo: string): Promise<boolean> {
@@ -79,6 +79,14 @@ export class StorageService {
       value: JSON.stringify(filtered)
     });
     this.markedCodesSubject.next(filtered);
+  }
+
+  async setMarkedCodes(codes: string[]): Promise<void> {
+    await Preferences.set({
+      key: SEGUIMIENTO_KEY,
+      value: JSON.stringify(codes)
+    });
+    this.markedCodesSubject.next([...codes]);
   }
 
   // ==========================================

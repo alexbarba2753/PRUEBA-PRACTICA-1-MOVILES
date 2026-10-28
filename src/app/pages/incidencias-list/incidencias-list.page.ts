@@ -224,8 +224,9 @@ export class IncidenciasListPage implements OnInit, OnDestroy {
   }
 
   isIncidenciaMarked(incidencia: Incidencia): boolean {
-    const code = incidencia.codigo || incidencia.id || '';
-    return this.markedCodes.includes(code);
+    const code = incidencia.codigo || '';
+    const id = incidencia.id || '';
+    return (code !== '' && this.markedCodes.includes(code)) || (id !== '' && this.markedCodes.includes(id));
   }
 
   applyFilter(): void {

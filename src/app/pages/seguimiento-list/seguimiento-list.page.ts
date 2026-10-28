@@ -79,7 +79,7 @@ export class SeguimientoListPage implements OnInit, OnDestroy {
     this.subs.add(
       this.storageService.markedCodes$.subscribe(codes => {
         this.markedCodes = codes;
-        this.loadSeguimiento();
+        this.cdr.markForCheck();
       })
     );
 
@@ -135,8 +135,12 @@ export class SeguimientoListPage implements OnInit, OnDestroy {
   async onToggleSeguimiento(incidencia: Incidencia): Promise<void> {
     const code = incidencia.codigo || incidencia.id || '';
     await this.storageService.toggleMark(code);
-    // Al desmarcarla, se actualiza el Subject de StorageService y se recarga automáticamente
+    this.incidencias = this.incidencias.filter(i =>
+      i.codigo !== code && i.id !== code
+    );
     this.toastMessage = `Incidencia ${code} removida de seguimiento.`;
     this.isToastOpen = true;
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 }

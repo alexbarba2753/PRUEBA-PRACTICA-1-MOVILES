@@ -295,11 +295,13 @@ export class DashboardPage implements OnInit, OnDestroy {
   onRefresh(event: Event): void {
     const customEvent = event as RefresherCustomEvent;
     this.incidenciasService.getAllIncidencias().subscribe({
-      next: list => {
+      next: async list => {
         this.metrics.total = list.length;
         this.metrics.pendientes = list.filter(i => i.estado === 'pendiente').length;
         this.metrics.enProceso = list.filter(i => i.estado === 'en_proceso').length;
         this.metrics.resueltas = list.filter(i => i.estado === 'resuelta').length;
+        const validCodes = await this.incidenciasService.syncMarkedCodesWithRemote(list);
+        this.metrics.seguimiento = validCodes.length;
         customEvent.target.complete();
         this.cdr.markForCheck();
         this.cdr.detectChanges();
@@ -317,11 +319,13 @@ export class DashboardPage implements OnInit, OnDestroy {
 
   loadMetrics(): void {
     this.incidenciasService.getAllIncidencias().subscribe({
-      next: list => {
+      next: async list => {
         this.metrics.total = list.length;
         this.metrics.pendientes = list.filter(i => i.estado === 'pendiente').length;
         this.metrics.enProceso = list.filter(i => i.estado === 'en_proceso').length;
         this.metrics.resueltas = list.filter(i => i.estado === 'resuelta').length;
+        const validCodes = await this.incidenciasService.syncMarkedCodesWithRemote(list);
+        this.metrics.seguimiento = validCodes.length;
         this.cdr.markForCheck();
         this.cdr.detectChanges();
       },

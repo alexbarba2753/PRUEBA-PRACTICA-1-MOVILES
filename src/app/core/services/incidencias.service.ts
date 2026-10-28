@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, of, throwError, Subject } from 'rxjs';
+import { Observable, of, throwError, Subject, from } from 'rxjs';
 import { map, catchError, tap, switchMap } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 import { Incidencia, IncidenciasPaginadasResponse } from '../models/incidencia.model';
@@ -59,12 +59,43 @@ export class IncidenciasService {
 
   /**
    * Obtiene la totalidad de registros remotos para alimentar los indicadores del Dashboard (R10)
+   * y sincroniza los códigos de seguimiento para purgar incidencias eliminadas.
    */
   getAllIncidencias(): Observable<Incidencia[]> {
     return this.http.get<Incidencia[]>(this.apiUrl).pipe(
       map(items => Array.isArray(items) ? items : []),
+      tap(list => {
+        this.syncMarkedCodesWithRemote(list);
+      }),
       catchError(() => of([]))
     );
+  }
+
+  /**
+   * Compara los códigos de seguimiento guardados en el dispositivo con las incidencias remotas.
+   * Si una incidencia fue eliminada de la oficina remota, se purga del almacenamiento local
+   * para mantener sincronizados los contadores del Dashboard y la pestaña de Seguimiento.
+   */
+  async syncMarkedCodesWithRemote(remoteList: Incidencia[]): Promise<string[]> {
+    try {
+      const codes = await this.storageService.getMarkedCodes();
+      if (!codes || codes.length === 0) return [];
+
+      const existingKeys = new Set(
+        remoteList.flatMap(inc => [
+          String(inc.codigo || '').trim(),
+          String(inc.id || '').trim()
+        ]).filter(k => k.length > 0)
+      );
+
+      const validCodes = codes.filter(c => existingKeys.has(String(c).trim()));
+      if (validCodes.length !== codes.length) {
+        await this.storageService.setMarkedCodes(validCodes);
+      }
+      return validCodes;
+    } catch {
+      return [];
+    }
   }
 
   /**
@@ -112,15 +143,37 @@ export class IncidenciasService {
   /**
    * R1: Obtiene las incidencias marcadas en el dispositivo.
    * La lista de códigos marcados se conserva únicamente en local y NO se envía a la API.
+   * Si algún registro fue eliminado remotamente de la oficina, se purga automáticamente de las preferencias locales.
    */
   getSeguimientoIncidencias(): Observable<Incidencia[]> {
-    return this.storageService.markedCodes$.pipe(
+    return from(this.storageService.getMarkedCodes()).pipe(
       switchMap(codes => {
         if (!codes || codes.length === 0) {
           return of([]);
         }
-        return this.getAllIncidencias().pipe(
-          map(all => all.filter(inc => codes.includes(inc.codigo) || (inc.id && codes.includes(inc.id))))
+        return this.http.get<Incidencia[]>(this.apiUrl).pipe(
+          map(items => {
+            const list = Array.isArray(items) ? items : [];
+            const existingKeys = new Set(
+              list.flatMap(inc => [
+                String(inc.codigo || '').trim(),
+                String(inc.id || '').trim()
+              ]).filter(k => k.length > 0)
+            );
+
+            // Filtrar códigos válidos que aún existen en MockAPI
+            const validCodes = codes.filter(c => existingKeys.has(String(c).trim()));
+            if (validCodes.length !== codes.length) {
+              this.storageService.setMarkedCodes(validCodes);
+            }
+
+            const validSet = new Set(validCodes.map(c => String(c).trim()));
+            return list.filter(inc =>
+              validSet.has(String(inc.codigo || '').trim()) ||
+              validSet.has(String(inc.id || '').trim())
+            );
+          }),
+          catchError(() => of([]))
         );
       })
     );

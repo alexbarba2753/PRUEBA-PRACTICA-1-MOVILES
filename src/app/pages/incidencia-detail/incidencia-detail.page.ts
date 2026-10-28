@@ -134,8 +134,7 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
       next: async (item) => {
         this.incidencia = item;
         this.isLoading = false;
-        const code = item.codigo || item.id || '';
-        this.isMarked = await this.storageService.isMarked(code);
+        this.isMarked = await this.storageService.isMarked(item.codigo, item.id);
         this.cdr.markForCheck();
         this.cdr.detectChanges();
       },
@@ -158,8 +157,7 @@ export class IncidenciaDetailPage implements OnInit, OnDestroy {
     this.incidenciasService.getIncidenciaById(id).subscribe({
       next: async (item) => {
         this.incidencia = item;
-        const code = item.codigo || item.id || '';
-        this.isMarked = await this.storageService.isMarked(code);
+        this.isMarked = await this.storageService.isMarked(item.codigo, item.id);
         customEvent.target.complete();
         this.cdr.markForCheck();
         this.cdr.detectChanges();

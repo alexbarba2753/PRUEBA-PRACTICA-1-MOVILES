@@ -88,3 +88,4 @@ tsconfig.spec.json
 src/test-setup.ts
 src/**/*.spec.ts
 *.apk
+!UrbanInspect.apk

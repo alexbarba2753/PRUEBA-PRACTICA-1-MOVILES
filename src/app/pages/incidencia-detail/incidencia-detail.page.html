@@ -1,0 +1,216 @@
+<ion-header [translucent]="true" class="ion-no-border">
+  <ion-toolbar color="primary">
+    <ion-buttons slot="start">
+      <ion-back-button defaultHref="/tabs/incidencias"></ion-back-button>
+    </ion-buttons>
+    <ion-title>Detalle de Incidencia</ion-title>
+    <ion-buttons slot="end">
+      @if (incidencia) {
+        <ion-button (click)="toggleSeguimiento()">
+          <ion-icon [name]="isMarked ? 'bookmark' : 'bookmark-outline'" slot="icon-only" [color]="isMarked ? 'warning' : 'light'"></ion-icon>
+        </ion-button>
+      }
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="detail-content">
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content pullingText="Desliza para actualizar..." refreshingSpinner="circles">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  @if (isLoading) {
+    <div class="state-container">
+      <ion-spinner name="crescent" color="primary"></ion-spinner>
+      <p>Consultando detalle de la incidencia...</p>
+    </div>
+  }
+
+  @else if (hasError || !incidencia) {
+    <div class="state-container error-state">
+      <ion-icon name="alert-circle-outline" color="danger"></ion-icon>
+      <h3>Incidencia no encontrada</h3>
+      <p>No se pudo cargar la información solicitada desde el servicio.</p>
+      <ion-button color="primary" routerLink="/tabs/incidencias">
+        Volver al listado
+      </ion-button>
+    </div>
+  }
+
+  @else {
+    <!-- Fotografía de evidencia accesible (R2, R6) -->
+    @if (incidencia.fotografia) {
+      <div class="evidence-hero">
+        <img [src]="incidencia.fotografia" [alt]="incidencia.tipo" class="hero-image" />
+        <div class="photo-badge">Evidencia Fotográfica</div>
+      </div>
+    } @else {
+      <div class="no-photo-hero">
+        <ion-icon name="image-outline"></ion-icon>
+        <span>Sin fotografía adjunta</span>
+      </div>
+    }
+
+    <!-- Cabecera de la incidencia -->
+    <div class="detail-header-card">
+      <div class="tags-row">
+        <span class="codigo-chip">{{ incidencia.codigo }}</span>
+        <ion-badge [color]="getEstadoColor(incidencia.estado)" class="status-badge">
+          {{ formatEstado(incidencia.estado) }}
+        </ion-badge>
+        <span class="priority-chip" [class]="'priority-' + (incidencia.prioridad || 'media')">
+          Prioridad {{ incidencia.prioridad | uppercase }}
+        </span>
+      </div>
+
+      <h1 class="incident-title">{{ incidencia.tipo }}</h1>
+
+      <div class="location-banner">
+        <ion-icon name="location-outline"></ion-icon>
+        <span><strong>{{ incidencia.sector }}</strong> &bull; {{ incidencia.direccion }}</span>
+      </div>
+    </div>
+
+    <!-- Descripción del problema -->
+    <ion-card class="info-card">
+      <ion-card-header>
+        <ion-card-title>Descripción del Hecho</ion-card-title>
+      </ion-card-header>
+      <ion-card-content>
+        <p class="description-text">{{ incidencia.descripcion }}</p>
+        <div class="meta-row">
+          <ion-icon name="calendar-outline"></ion-icon>
+          <span>Registrado: {{ incidencia.fecha }}</span>
+        </div>
+      </ion-card-content>
+    </ion-card>
+
+    <!-- Coordenadas Geográficas (R7) -->
+    @if (incidencia.coordenadas) {
+      <ion-card class="info-card">
+        <ion-card-header>
+          <ion-card-title>Ubicación Georreferenciada</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="coords-display">
+            <div class="coord-item">
+              <span class="coord-label">Latitud:</span>
+              <span class="coord-val">{{ incidencia.coordenadas.lat }}</span>
+            </div>
+            <div class="coord-item">
+              <span class="coord-label">Longitud:</span>
+              <span class="coord-val">{{ incidencia.coordenadas.lng }}</span>
+            </div>
+          </div>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Condiciones Meteorológicas registradas (R4) -->
+    @if (incidencia.clima) {
+      <ion-card class="info-card">
+        <ion-card-header>
+          <ion-card-title>Condiciones Meteorológicas al Registro</ion-card-title>
+        </ion-card-header>
+        <ion-card-content>
+          <div class="clima-grid">
+            <div class="clima-col">
+              <span class="val">{{ incidencia.clima.temperatura }} °C</span>
+              <span class="lbl">Temperatura</span>
+            </div>
+            <div class="clima-col">
+              <span class="val">{{ incidencia.clima.precipitacion }} mm</span>
+              <span class="lbl">Lluvia última hora</span>
+            </div>
+            <div class="clima-col">
+              <span class="val text-condicion">{{ incidencia.clima.condicion }}</span>
+              <span class="lbl">Estado del tiempo</span>
+            </div>
+          </div>
+
+          @if (incidencia.clima.advertenciaLluvia) {
+            <div class="clima-warning">
+              <ion-icon name="warning-outline"></ion-icon>
+              <span>Advertencia: Precipitación mayor a 5 mm. Puede comprometer las obras de reparación.</span>
+            </div>
+          }
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Observación de Cierre (R9) -->
+    @if (incidencia.estado === 'resuelta' && incidencia.observacion) {
+      <ion-card class="info-card card-observacion">
+        <ion-card-header>
+          <div class="resuelto-header">
+            <ion-icon name="checkmark-done-outline" color="success"></ion-icon>
+            <ion-card-title>Observación de Resolución (Cierre)</ion-card-title>
+          </div>
+        </ion-card-header>
+        <ion-card-content>
+          <p class="observacion-text">{{ incidencia.observacion }}</p>
+        </ion-card-content>
+      </ion-card>
+    }
+
+    <!-- Panel de Gestión de Estado y Ciclo de Vida (R9) -->
+    <ion-card class="info-card workflow-card">
+      <ion-card-header>
+        <ion-card-title>Gestión y Actualización de Estado (R9)</ion-card-title>
+        <ion-card-subtitle>
+          Estado actual: <strong>{{ formatEstado(incidencia.estado) }}</strong>
+        </ion-card-subtitle>
+      </ion-card-header>
+
+      <ion-card-content>
+        <!-- Si está Pendiente -->
+        @if (incidencia.estado === 'pendiente') {
+          <div class="workflow-actions">
+            <ion-button expand="block" color="primary" (click)="cambiarAEnProceso()">
+              <ion-icon name="construct-outline" slot="start"></ion-icon>
+              Pasar a "En Proceso"
+            </ion-button>
+            <ion-button expand="block" color="success" (click)="solicitarResolucion()">
+              <ion-icon name="checkmark-circle-outline" slot="start"></ion-icon>
+              Marcar como "Resuelta" (Con Observación)
+            </ion-button>
+          </div>
+        }
+
+        <!-- Si está En Proceso -->
+        @else if (incidencia.estado === 'en_proceso') {
+          <div class="workflow-actions">
+            <ion-button expand="block" color="success" (click)="solicitarResolucion()">
+              <ion-icon name="checkmark-done-outline" slot="start"></ion-icon>
+              Finalizar y Marcar como "Resuelta"
+            </ion-button>
+            <ion-button expand="block" fill="outline" color="medium" (click)="intentarRegresarAPendiente()">
+              <ion-icon name="ban-outline" slot="start"></ion-icon>
+              Regresar a Pendiente (Bloqueado por R9)
+            </ion-button>
+          </div>
+        }
+
+        <!-- Si está Resuelta -->
+        @else if (incidencia.estado === 'resuelta') {
+          <div class="resuelto-badge-box">
+            <ion-icon name="checkmark-circle-outline" color="success"></ion-icon>
+            <p><strong>Incidencia finalizada y cerrada.</strong></p>
+            <span class="resuelto-rule-note">
+              Conforme a la regla R9, una incidencia resuelta no puede regresar a estado pendiente ni en proceso.
+            </span>
+          </div>
+
+          <!-- Botón de prueba para la defensa: intentar devolver resuelta a pendiente -->
+          <ion-button expand="block" fill="clear" color="medium" size="small" (click)="intentarRegresarAPendiente()">
+            <ion-icon name="ban-outline" slot="start"></ion-icon>
+            Comprobar restricción de regreso a Pendiente
+          </ion-button>
+        }
+      </ion-card-content>
+    </ion-card>
+
+    <div class="spacer-bottom"></div>
+  }
+</ion-content>

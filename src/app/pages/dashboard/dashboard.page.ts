@@ -13,7 +13,10 @@ import {
   IonGrid,
   IonRow,
   IonCol,
-  IonBadge
+  IonBadge,
+  IonRefresher,
+  IonRefresherContent,
+  RefresherCustomEvent
 } from '@ionic/angular';
 import { addIcons } from 'ionicons';
 import {
@@ -47,7 +50,9 @@ import { Incidencia } from '../../core/models/incidencia.model';
     IonGrid,
     IonRow,
     IonCol,
-    IonBadge
+    IonBadge,
+    IonRefresher,
+    IonRefresherContent
   ],
   template: `
     <ion-header [translucent]="true" class="ion-no-border">
@@ -57,6 +62,11 @@ import { Incidencia } from '../../core/models/incidencia.model';
     </ion-header>
 
     <ion-content [fullscreen]="true" class="dashboard-content">
+      <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+        <ion-refresher-content pullingText="Desliza para actualizar indicadores..." refreshingSpinner="circles">
+        </ion-refresher-content>
+      </ion-refresher>
+
       <div class="hero-banner">
         <div class="hero-text">
           <h2>Inspección de Infraestructura</h2>
@@ -273,6 +283,26 @@ export class DashboardPage implements OnInit, OnDestroy {
         this.metrics.seguimiento = codes.length;
       })
     );
+  }
+
+  ionViewWillEnter(): void {
+    this.loadMetrics();
+  }
+
+  onRefresh(event: Event): void {
+    const customEvent = event as RefresherCustomEvent;
+    this.incidenciasService.getAllIncidencias().subscribe({
+      next: list => {
+        this.metrics.total = list.length;
+        this.metrics.pendientes = list.filter(i => i.estado === 'pendiente').length;
+        this.metrics.enProceso = list.filter(i => i.estado === 'en_proceso').length;
+        this.metrics.resueltas = list.filter(i => i.estado === 'resuelta').length;
+        customEvent.target.complete();
+      },
+      error: () => {
+        customEvent.target.complete();
+      }
+    });
   }
 
   ngOnDestroy(): void {

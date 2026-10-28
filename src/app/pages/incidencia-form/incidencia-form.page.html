@@ -18,7 +18,7 @@
 
       <ion-card-content>
         <!-- Tipo de Incidencia -->
-        <ion-item lines="inset" class="custom-input-item">
+        <ion-item lines="none" class="custom-input-item">
           <ion-label position="stacked">Tipo de Incidencia *</ion-label>
           <ion-select formControlName="tipo" interface="action-sheet" placeholder="Seleccione el tipo">
             @for (t of tiposDisponibles; track t) {
@@ -34,7 +34,7 @@
         }
 
         <!-- Prioridad -->
-        <ion-item lines="inset" class="custom-input-item">
+        <ion-item lines="none" class="custom-input-item">
           <ion-label position="stacked">Prioridad de Atención *</ion-label>
           <ion-select formControlName="prioridad" interface="popover" placeholder="Seleccione prioridad">
             <ion-select-option value="baja">Baja</ion-select-option>
@@ -50,7 +50,7 @@
         }
 
         <!-- Descripción -->
-        <ion-item lines="inset" class="custom-input-item">
+        <ion-item lines="none" class="custom-input-item">
           <ion-label position="stacked">Descripción del Problema *</ion-label>
           <ion-textarea
             formControlName="descripcion"
@@ -60,7 +60,7 @@
         </ion-item>
 
         <!-- Sector -->
-        <ion-item lines="inset" class="custom-input-item">
+        <ion-item lines="none" class="custom-input-item">
           <ion-label position="stacked">Sector / Barrio *</ion-label>
           <ion-input
             formControlName="sector"
@@ -69,7 +69,7 @@
         </ion-item>
 
         <!-- Dirección -->
-        <ion-item lines="inset" class="custom-input-item">
+        <ion-item lines="none" class="custom-input-item">
           <ion-label position="stacked">Dirección / Intersección *</ion-label>
           <ion-input
             formControlName="direccion"
@@ -97,12 +97,12 @@
 
       <ion-card-content>
         <div class="coords-row">
-          <ion-item lines="inset" class="custom-input-item half-field">
+          <ion-item lines="none" class="custom-input-item half-field">
             <ion-label position="stacked">Latitud</ion-label>
             <ion-input type="number" step="0.0001" formControlName="latitud" placeholder="-0.1807"></ion-input>
           </ion-item>
 
-          <ion-item lines="inset" class="custom-input-item half-field">
+          <ion-item lines="none" class="custom-input-item half-field">
             <ion-label position="stacked">Longitud</ion-label>
             <ion-input type="number" step="0.0001" formControlName="longitud" placeholder="-78.4678"></ion-input>
           </ion-item>

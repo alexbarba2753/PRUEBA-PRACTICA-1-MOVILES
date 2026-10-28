@@ -32,6 +32,23 @@
  * https://ionicframework.com/docs/theming/dark-mode
  */
 
-/* @import "@ionic/angular/css/palettes/dark.always.css"; */
-/* @import "@ionic/angular/css/palettes/dark.class.css"; */
-@import '@ionic/angular/css/palettes/dark.system.css';
+/* Deshabilitamos dark.system para mantener tema de campo consistente y alto contraste */
+/* @import '@ionic/angular/css/palettes/dark.system.css'; */
+
+/* Reglas globales de contraste y legibilidad para trabajo en campo */
+:root {
+  --ion-text-color: #0f172a;
+  --ion-item-color: #0f172a;
+  --ion-background-color: #f8fafc;
+}
+
+body {
+  color: #0f172a;
+}
+
+ion-input, ion-textarea, ion-select {
+  --color: #0f172a;
+  color: #0f172a;
+  --placeholder-color: #64748b;
+  --placeholder-opacity: 0.85;
+}

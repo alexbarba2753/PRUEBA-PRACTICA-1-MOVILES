@@ -107,6 +107,13 @@
             <ion-input type="number" step="0.0001" formControlName="longitud" placeholder="-78.4678"></ion-input>
           </ion-item>
         </div>
+
+        <div class="coords-helper-row">
+          <ion-button size="small" fill="clear" color="primary" (click)="usarCoordenadasQuito()">
+            <ion-icon name="location-outline" slot="start"></ion-icon>
+            Cargar Coordenadas de Quito (-0.1807, -78.4678)
+          </ion-button>
+        </div>
       </ion-card-content>
     </ion-card>
 
@@ -203,6 +210,13 @@
                 Opcional para prioridad baja o media
               }
             </span>
+          </div>
+
+          <div class="sample-photo-box">
+            <ion-button size="small" fill="outline" color="secondary" (click)="usarFotoMuestra()">
+              <ion-icon name="image-outline" slot="start"></ion-icon>
+              Usar foto de muestra de {{ incidenciaForm.get('tipo')?.value }}
+            </ion-button>
           </div>
         }
       </ion-card-content>

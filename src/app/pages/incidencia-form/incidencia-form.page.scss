@@ -77,6 +77,24 @@
   gap: 12px;
 }
 
+.coords-helper-row {
+  margin-top: 4px;
+  ion-button {
+    --padding-start: 0;
+    font-size: 12px;
+    font-weight: 600;
+  }
+}
+
+.sample-photo-box {
+  margin-top: 10px;
+  text-align: center;
+  ion-button {
+    font-weight: 600;
+    --border-radius: 8px;
+  }
+}
+
 .half-field {
   flex: 1;
 }

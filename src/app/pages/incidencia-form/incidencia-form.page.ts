@@ -272,26 +272,64 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
       // Consultar clima automáticamente con las coordenadas recién obtenidas (R7 -> R4)
       this.consultarClima();
     } catch (error: any) {
-      if (error?.message === 'PERMISO_DENEGADO') {
-        const alert = await this.alertCtrl.create({
-          header: 'Permiso de Ubicación Denegado',
-          message: 'No se concedió acceso al GPS. Puede ingresar manualmente las coordenadas numéricas válidas en los campos de Latitud y Longitud.',
-          buttons: ['Entendido']
-        });
-        await alert.present();
-      } else {
-        const toast = await this.toastCtrl.create({
-          message: 'No se pudo obtener señal GPS. Ingrese las coordenadas manualmente.',
-          duration: 3500,
-          color: 'warning'
-        });
-        await toast.present();
-      }
+      const alert = await this.alertCtrl.create({
+        header: 'Acceso GPS No Disponible',
+        subHeader: 'Ubicación física no detectada',
+        message: 'No se obtuvo señal GPS directa (habitual en navegadores o emuladores en PC). Conforme al requisito R7, puedes usar las coordenadas de Quito o ingresarlas manualmente.',
+        buttons: [
+          {
+            text: 'Ingresar Manualmente',
+            role: 'cancel'
+          },
+          {
+            text: 'Usar Coordenadas de Quito',
+            handler: () => {
+              this.usarCoordenadasQuito();
+            }
+          }
+        ]
+      });
+      await alert.present();
     } finally {
       this.isCapturingGps = false;
       this.cdr.markForCheck();
       this.cdr.detectChanges();
     }
+  }
+
+  usarCoordenadasQuito(): void {
+    // Coordenadas céntricas del Distrito Metropolitano de Quito (La Carolina / Iñaquito)
+    this.incidenciaForm.patchValue({
+      latitud: -0.1807,
+      longitud: -78.4678
+    });
+    this.consultarClima();
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
+  }
+
+  usarFotoMuestra(): void {
+    const tipo = this.incidenciaForm.get('tipo')?.value || 'Bache';
+    let path = 'assets/incidencias/bache.jpg';
+
+    if (tipo.includes('Luminaria')) {
+      path = 'assets/incidencias/luminaria.jpg';
+    } else if (tipo.includes('Alcantarilla')) {
+      path = 'assets/incidencias/alcantarilla.jpg';
+    } else if (tipo.includes('Señalización')) {
+      path = 'assets/incidencias/senal.jpg';
+    } else if (tipo.includes('parque')) {
+      path = 'assets/incidencias/parque.jpg';
+    }
+
+    this.fotografiaPreview = path;
+    this.storageService.saveDraft({
+      ...this.incidenciaForm.value,
+      fotografia: this.fotografiaPreview,
+      clima: this.climaInfo
+    });
+    this.cdr.markForCheck();
+    this.cdr.detectChanges();
   }
 
   // ==========================================
@@ -407,12 +445,18 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
 
         this.router.navigate(['/tabs/incidencias']);
       },
-      error: async () => {
+      error: async (err: any) => {
         await loader.dismiss();
+        let detalle = 'No se pudo comunicar con el servicio de oficina. Verifica la conexión a la API.';
+        if (err?.status === 413) {
+          detalle = 'La imagen es demasiado pesada para el servidor MockAPI (Error 413). Se comprimirá automáticamente o puedes usar una imagen de muestra.';
+        } else if (err?.status) {
+          detalle = `El servidor respondió con código HTTP ${err.status}: ${err.statusText || 'Error en petición'}.`;
+        }
         const alert = await this.alertCtrl.create({
           header: 'Error al Guardar',
-          message: 'No se pudo comunicar con el servicio de oficina. Verifica la conexión a la API.',
-          buttons: ['Reintentar']
+          message: detalle,
+          buttons: ['Aceptar']
         });
         await alert.present();
       }

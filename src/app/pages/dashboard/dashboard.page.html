@@ -1,0 +1,93 @@
+<ion-header [translucent]="true" class="ion-no-border">
+  <ion-toolbar color="primary">
+    <ion-title>UrbanInspect DMQ</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true" class="dashboard-content">
+  <ion-refresher slot="fixed" (ionRefresh)="onRefresh($event)">
+    <ion-refresher-content pullingText="Desliza para actualizar indicadores..." refreshingSpinner="circles">
+    </ion-refresher-content>
+  </ion-refresher>
+
+  <div class="hero-banner">
+    <div class="hero-text">
+      <h2>Inspección de Infraestructura</h2>
+      <p>Municipio del Distrito Metropolitano de Quito</p>
+    </div>
+    <ion-badge color="light" class="mode-badge">
+      <ion-icon name="business-outline"></ion-icon>
+      Inspector DMQ-04
+    </ion-badge>
+  </div>
+
+  <!-- Métricas / Indicadores (R10) -->
+  <div class="section-title">
+    <h3>Indicadores Operativos</h3>
+  </div>
+
+  <ion-grid class="metrics-grid">
+    <ion-row>
+      <ion-col size="6">
+        <ion-card class="metric-card card-total" routerLink="/tabs/incidencias">
+          <ion-card-content>
+            <div class="metric-icon"><ion-icon name="warning-outline"></ion-icon></div>
+            <div class="metric-number">{{ total() }}</div>
+            <div class="metric-label">Total Registradas</div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+
+      <ion-col size="6">
+        <ion-card class="metric-card card-pendientes" routerLink="/tabs/incidencias">
+          <ion-card-content>
+            <div class="metric-icon"><ion-icon name="time-outline"></ion-icon></div>
+            <div class="metric-number">{{ pendientes() }}</div>
+            <div class="metric-label">Pendientes</div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+
+      <ion-col size="6">
+        <ion-card class="metric-card card-proceso" routerLink="/tabs/incidencias">
+          <ion-card-content>
+            <div class="metric-icon"><ion-icon name="business-outline"></ion-icon></div>
+            <div class="metric-number">{{ enProceso() }}</div>
+            <div class="metric-label">En Proceso</div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+
+      <ion-col size="6">
+        <ion-card class="metric-card card-resueltas" routerLink="/tabs/incidencias">
+          <ion-card-content>
+            <div class="metric-icon"><ion-icon name="checkmark-circle-outline"></ion-icon></div>
+            <div class="metric-number">{{ resueltas() }}</div>
+            <div class="metric-label">Resueltas</div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+
+    <ion-row>
+      <ion-col size="12">
+        <ion-card class="metric-card card-seguimiento" routerLink="/tabs/seguimiento">
+          <ion-card-content class="row-content">
+            <div class="metric-icon"><ion-icon name="bookmark-outline"></ion-icon></div>
+            <div class="metric-info">
+              <div class="metric-number">{{ seguimiento() }}</div>
+              <div class="metric-label">En Seguimiento Local (este dispositivo)</div>
+            </div>
+          </ion-card-content>
+        </ion-card>
+      </ion-col>
+    </ion-row>
+  </ion-grid>
+
+  <div class="quick-actions">
+    <ion-button expand="block" color="secondary" size="large" routerLink="/tabs/nueva" class="action-btn">
+      <ion-icon name="add-circle-outline" slot="start"></ion-icon>
+      Registrar Nueva Incidencia
+    </ion-button>
+  </div>
+</ion-content>

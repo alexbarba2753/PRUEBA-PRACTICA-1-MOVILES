@@ -1,0 +1,56 @@
+<ion-card class="incidencia-card" [routerLink]="['/incidencias', incidencia.id || incidencia.codigo]">
+  <!-- Foto de evidencia (R2, R6) -->
+  @if (incidencia.fotografia) {
+    <div class="card-image-wrapper">
+      <img [src]="incidencia.fotografia" [alt]="incidencia.tipo" class="card-image" loading="lazy" />
+      <div class="priority-chip" [class]="'priority-' + (incidencia.prioridad || 'media')">
+        {{ incidencia.prioridad | uppercase }}
+      </div>
+    </div>
+  }
+
+  <ion-card-header>
+    <div class="header-top-row">
+      <span class="codigo-tag">{{ incidencia.codigo }}</span>
+      
+      <div class="actions-right">
+        <ion-badge [color]="getEstadoColor(incidencia.estado)" class="status-badge">
+          {{ formatEstado(incidencia.estado) }}
+        </ion-badge>
+        <ion-button
+          fill="clear"
+          size="small"
+          class="bookmark-btn"
+          (click)="onToggleSeguimiento($event)">
+          <ion-icon
+            [name]="isMarked ? 'bookmark' : 'bookmark-outline'"
+            [color]="isMarked ? 'warning' : 'medium'">
+          </ion-icon>
+        </ion-button>
+      </div>
+    </div>
+
+    <ion-card-title class="card-title">{{ incidencia.tipo }}</ion-card-title>
+    <ion-card-subtitle class="card-subtitle">
+      <ion-icon name="location-outline"></ion-icon>
+      <span>{{ incidencia.sector }} &bull; {{ incidencia.direccion }}</span>
+    </ion-card-subtitle>
+  </ion-card-header>
+
+  <ion-card-content>
+    <p class="description">{{ incidencia.descripcion }}</p>
+
+    <div class="card-footer-meta">
+      <div class="meta-item">
+        <ion-icon name="calendar-outline"></ion-icon>
+        <span>{{ incidencia.fecha }}</span>
+      </div>
+
+      @if (incidencia.clima) {
+        <div class="meta-item clima-pill" [class.clima-alerta]="incidencia.clima.advertenciaLluvia">
+          <span>{{ incidencia.clima.temperatura }}°C &bull; {{ incidencia.clima.precipitacion }} mm</span>
+        </div>
+      }
+    </div>
+  </ion-card-content>
+</ion-card>

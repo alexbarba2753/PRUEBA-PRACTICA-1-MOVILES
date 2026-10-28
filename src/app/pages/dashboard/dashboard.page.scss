@@ -1,0 +1,133 @@
+.dashboard-content {
+  --background: #f8fafc;
+}
+
+.hero-banner {
+  background: linear-gradient(135deg, var(--ion-color-primary, #3880ff) 0%, #1e40af 100%);
+  color: #ffffff;
+  padding: 24px 20px 28px 20px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+}
+
+.hero-text h2 {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.hero-text p {
+  margin: 6px 0 14px 0;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+.mode-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.section-title {
+  padding: 20px 16px 8px 16px;
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+  }
+}
+
+.metrics-grid {
+  padding: 0 8px;
+}
+
+.metric-card {
+  margin: 6px;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+}
+
+.metric-card ion-card-content {
+  padding: 16px;
+  text-align: center;
+}
+
+.metric-icon ion-icon {
+  font-size: 28px;
+  margin-bottom: 6px;
+}
+
+.metric-number {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.metric-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.card-total {
+  border-top: 4px solid #3b82f6;
+  .metric-icon ion-icon,
+  .metric-number {
+    color: #3b82f6;
+  }
+}
+
+.card-pendientes {
+  border-top: 4px solid #f59e0b;
+  .metric-icon ion-icon,
+  .metric-number {
+    color: #f59e0b;
+  }
+}
+
+.card-proceso {
+  border-top: 4px solid #8b5cf6;
+  .metric-icon ion-icon,
+  .metric-number {
+    color: #8b5cf6;
+  }
+}
+
+.card-resueltas {
+  border-top: 4px solid #10b981;
+  .metric-icon ion-icon,
+  .metric-number {
+    color: #10b981;
+  }
+}
+
+.card-seguimiento {
+  border-left: 5px solid #f59e0b;
+  .row-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    text-align: left;
+  }
+  .metric-icon ion-icon {
+    font-size: 36px;
+    color: #f59e0b;
+    margin: 0;
+  }
+}
+
+.quick-actions {
+  padding: 16px;
+}
+
+.action-btn {
+  font-weight: 700;
+  --border-radius: 12px;
+}

@@ -36,12 +36,14 @@ import {
   navigateOutline,
   alertCircleOutline,
   imageOutline,
-  refreshOutline
+  refreshOutline,
+  locateOutline
 } from 'ionicons/icons';
 import { Subscription } from 'rxjs';
 import { IncidenciasService } from '../../core/services/incidencias.service';
 import { WeatherService } from '../../core/services/weather.service';
 import { CameraService } from '../../core/services/camera.service';
+import { LocationService } from '../../core/services/location.service';
 import { StorageService } from '../../core/services/storage.service';
 import { Incidencia, ClimaInfo, TipoIncidencia, PrioridadIncidencia } from '../../core/models/incidencia.model';
 
@@ -83,6 +85,7 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
   climaInfo: ClimaInfo | null = null;
   isLoadingClima = false;
   climaError: string | null = null;
+  isCapturingGps = false;
 
   isSubmitting = false;
 
@@ -103,6 +106,7 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
     private incidenciasService: IncidenciasService,
     private weatherService: WeatherService,
     private cameraService: CameraService,
+    private locationService: LocationService,
     private storageService: StorageService,
     private router: Router,
     private alertCtrl: AlertController,
@@ -118,7 +122,8 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
       navigateOutline,
       alertCircleOutline,
       imageOutline,
-      refreshOutline
+      refreshOutline,
+      locateOutline
     });
   }
 
@@ -243,6 +248,48 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
   }
 
   // ==========================================
+  // R7: UBICACIÓN DE LA INCIDENCIA (GPS / MANUAL)
+  // ==========================================
+  async obtenerUbicacionGps(): Promise<void> {
+    this.isCapturingGps = true;
+    try {
+      const coords = await this.locationService.getCurrentPosition();
+      this.incidenciaForm.patchValue({
+        latitud: coords.lat,
+        longitud: coords.lng
+      });
+
+      const toast = await this.toastCtrl.create({
+        message: `Coordenadas capturadas: ${coords.lat}, ${coords.lng}`,
+        duration: 2500,
+        color: 'success'
+      });
+      await toast.present();
+
+      // Consultar clima automáticamente con las coordenadas recién obtenidas (R7 -> R4)
+      this.consultarClima();
+    } catch (error: any) {
+      if (error?.message === 'PERMISO_DENEGADO') {
+        const alert = await this.alertCtrl.create({
+          header: 'Permiso de Ubicación Denegado',
+          message: 'No se concedió acceso al GPS. Puede ingresar manualmente las coordenadas numéricas válidas en los campos de Latitud y Longitud.',
+          buttons: ['Entendido']
+        });
+        await alert.present();
+      } else {
+        const toast = await this.toastCtrl.create({
+          message: 'No se pudo obtener señal GPS. Ingrese las coordenadas manualmente.',
+          duration: 3500,
+          color: 'warning'
+        });
+        await toast.present();
+      }
+    } finally {
+      this.isCapturingGps = false;
+    }
+  }
+
+  // ==========================================
   // R4: CONSULTA DE CONDICIONES METEOROLÓGICAS
   // ==========================================
   consultarClima(): void {
@@ -303,11 +350,15 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
       return;
     }
 
-    // Regla R7: Si tipo es BACHE, la ubicación es OBLIGATORIA
-    if (tipo === 'Bache' && (latitud === null || longitud === null || isNaN(Number(latitud)) || isNaN(Number(longitud)))) {
+    // Regla R7: Si tipo es BACHE, la ubicación es OBLIGATORIA (GPS o manual válido)
+    const latNum = Number(latitud);
+    const lngNum = Number(longitud);
+    const coordsValidas = !isNaN(latNum) && !isNaN(lngNum) && latNum >= -90 && latNum <= 90 && lngNum >= -180 && lngNum <= 180 && (latNum !== 0 || lngNum !== 0);
+
+    if (tipo === 'Bache' && !coordsValidas) {
       const alert = await this.alertCtrl.create({
         header: 'Ubicación Obligatoria para Bache',
-        message: 'Para incidencias de tipo Bache es obligatorio registrar coordenadas geográficas válidas.',
+        message: 'Para incidencias de tipo Bache es obligatorio registrar coordenadas válidas (obtenidas por GPS o ingresadas manualmente: Latitud entre -90 y 90, Longitud entre -180 y 180).',
         buttons: ['Aceptar']
       });
       await alert.present();

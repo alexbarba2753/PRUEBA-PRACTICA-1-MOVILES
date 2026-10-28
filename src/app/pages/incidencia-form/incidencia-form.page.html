@@ -82,7 +82,17 @@
     <!-- Tarjeta: Coordenadas y Ubicación (R7) -->
     <ion-card class="form-card">
       <ion-card-header>
-        <ion-card-title>Ubicación y Coordenadas</ion-card-title>
+        <div class="card-header-flex">
+          <ion-card-title>Ubicación y Coordenadas</ion-card-title>
+          <ion-button size="small" fill="outline" color="secondary" (click)="obtenerUbicacionGps()" [disabled]="isCapturingGps">
+            @if (isCapturingGps) {
+              <ion-spinner name="dots"></ion-spinner>
+            } @else {
+              <ion-icon name="locate-outline" slot="start"></ion-icon>
+              Obtener GPS
+            }
+          </ion-button>
+        </div>
       </ion-card-header>
 
       <ion-card-content>

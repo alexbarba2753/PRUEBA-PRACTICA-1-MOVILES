@@ -291,26 +291,36 @@ export class IncidenciaFormPage implements OnInit, OnDestroy {
 
       const toast = await this.toastCtrl.create({
         message: `Coordenadas capturadas: ${coords.lat}, ${coords.lng}`,
-        duration: 2000,
+        duration: 2500,
         color: 'success'
       });
       await toast.present();
 
       // Consultar clima automáticamente con las coordenadas obtenidas (R7 -> R4)
       this.consultarClima();
-    } catch {
-      const alert = await this.alertCtrl.create({
-        header: 'GPS No Disponible',
-        message: 'No se obtuvo señal GPS directa. Conforme al requisito R7, puedes usar coordenadas manuales o las coordenadas de Quito.',
-        buttons: [
-          { text: 'Ingresar Manualmente', role: 'cancel' },
-          {
-            text: 'Cargar Coordenadas de Quito',
-            handler: () => this.usarCoordenadasQuito()
-          }
-        ]
-      });
-      await alert.present();
+    } catch (err: any) {
+      if (err?.message === 'PERMISO_DENEGADO') {
+        const alert = await this.alertCtrl.create({
+          header: 'Permiso GPS Denegado',
+          message: 'No se concedió acceso a la ubicación. Conforme al requisito R7, puedes ingresar las coordenadas manualmente o usar las de Quito.',
+          buttons: [
+            { text: 'Ingresar Manualmente', role: 'cancel' },
+            {
+              text: 'Cargar Coordenadas de Quito',
+              handler: () => this.usarCoordenadasQuito()
+            }
+          ]
+        });
+        await alert.present();
+      } else {
+        this.usarCoordenadasQuito();
+        const toast = await this.toastCtrl.create({
+          message: 'No se obtuvo señal directa de satélite. Se cargaron las coordenadas de Quito (-0.1807, -78.4678).',
+          duration: 3000,
+          color: 'warning'
+        });
+        await toast.present();
+      }
     } finally {
       this.isCapturingGps.set(false);
     }

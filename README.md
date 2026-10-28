@@ -24,25 +24,12 @@ Aplicación móvil desarrollada para el **Municipio del Distrito Metropolitano d
 
 ---
 
-## 🌐 Configuración del Servicio de Oficina (MockAPI)
+## 🌐 Servicio de Oficina (MockAPI)
 
-La aplicación viene con **15 incidencias de prueba precargadas de Quito** para poder probar todo de inmediato. Para conectar tu propio servicio de oficina:
-
-1. Ve a [MockAPI.io](https://mockapi.io), crea un proyecto y agrega el recurso llamado `incidencias`.
-2. Copia la URL que te genera (ejemplo: `https://67xxxxxx.mockapi.io/api/v1/incidencias`).
-3. Abre el archivo `src/environments/environment.ts` y pega tu URL:
-   ```typescript
-   export const environment = {
-     production: false,
-     mockApiUrl: 'https://67xxxxxx.mockapi.io/api/v1/incidencias',
-     weatherApiUrl: 'https://api.open-meteo.com/v1/forecast'
-   };
-   ```
-4. **(Opcional) Carga automática de datos de prueba:**
-   Para subir las 15 incidencias de prueba a tu MockAPI con un solo comando, ejecuta en la terminal:
-   ```bash
-   node scripts/seed-mockapi.mjs TU_URL_DE_MOCKAPI
-   ```
+La aplicación está conectada directamente al recurso remoto de MockAPI:
+- **Endpoint:** `https://6ae17514be3bc8fead9884df.mockapi.io/api/v1/incidencias`
+- Configurado en `src/environments/environment.ts` y `src/environments/environment.prod.ts`.
+- Todas las consultas, paginación remota incremental, registros y actualizaciones de estado operan 100% en vivo contra este servicio REST.
 
 ---
 

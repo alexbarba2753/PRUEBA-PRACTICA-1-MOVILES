@@ -16,8 +16,7 @@
     "test": "npm run test:unit && npm run test:e2e",
     "test:unit": "ng test --no-watch",
     "test:unit:watch": "ng test --watch",
-    "test:e2e": "playwright test",
-    "seed": "node scripts/seed-mockapi.mjs"
+    "test:e2e": "playwright test"
   },
   "private": true,
   "dependencies": {

@@ -1,7 +1,5 @@
-// Configuración de entorno para producción
 export const environment = {
   production: true,
-  // PEGA AQUÍ TU URL DE MOCKAPI (recurso 'incidencias'):
-  mockApiUrl: '',
+  mockApiUrl: 'https://6ae17514be3bc8fead9884df.mockapi.io/api/v1/incidencias',
   weatherApiUrl: 'https://api.open-meteo.com/v1/forecast'
 };
